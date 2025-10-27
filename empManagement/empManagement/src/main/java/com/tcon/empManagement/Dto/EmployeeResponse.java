@@ -26,8 +26,6 @@ public class EmployeeResponse {
     private Address address;
     private BankDetails bankDetails;
     private EmergencyContact emergencyContact;
-    private Instant createdAt;
-    private Instant updatedAt;
 
 
     @Data

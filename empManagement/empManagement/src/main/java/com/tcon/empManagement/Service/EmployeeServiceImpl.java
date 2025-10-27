@@ -200,8 +200,6 @@ public class EmployeeServiceImpl implements EmployeeService {
                         .contactNumber(e.getEmergencyContact().getContactNumber())
                         .relation(e.getEmergencyContact().getRelation())
                         .build())
-                .createdAt(e.getCreatedAt())
-                .updatedAt(e.getUpdatedAt())
                 .build();
     }
 }

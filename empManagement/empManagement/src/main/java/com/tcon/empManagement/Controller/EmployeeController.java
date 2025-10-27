@@ -37,7 +37,7 @@ public class EmployeeController {
         log.info("PATCH /api/employees/{} email={} role={}", id, req.getEmail(), req.getEmpRole());  // request context [web:4]
         try {
             EmployeeResponse resp = service.updateById(id, req);
-            log.info("PATCH /api/employees/{} success updatedAt={}", id, resp.getUpdatedAt());  // success context [web:4]
+            // success context [web:4]
             return resp;
         } catch (Exception ex) {
             log.error("PATCH /api/employees/{} failed", id, ex);  // single error log here; advice shapes response [web:12]
