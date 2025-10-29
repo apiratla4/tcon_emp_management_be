@@ -73,7 +73,6 @@ public class EmployeeCreateRequest {
     public static class BankDetailsDto {
         @NotNull @Min(1000000000L) @Max(999999999999999L)
         private Long bankAccount;
-
         @NotBlank
         @Pattern(regexp = "^[A-Z]{4}[A-Z0-9]{7}$")
         private String ifscCode;
@@ -83,7 +82,6 @@ public class EmployeeCreateRequest {
 
         @NotBlank @Size(max = 80)
         private String branchName;
-
     }
     @Data
     @NoArgsConstructor
@@ -98,6 +96,5 @@ public class EmployeeCreateRequest {
 
         @NotBlank @Size(max = 40)
         private String relation;
-
     }
 }
