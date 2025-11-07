@@ -19,11 +19,11 @@ public class EmployeeTaskHistory {
 
     @NotBlank
     @Indexed
-    private String empId;          // copied from Employee.empId
+    private String empId;
 
     @NotBlank
     @Size(max = 140)
-    private String empName;        // firstName + lastName captured at assignment time
+    private String empName;
 
     @NotBlank
     @Size(max = 120)
@@ -39,6 +39,8 @@ public class EmployeeTaskHistory {
 
     // Due date for completion
     private Instant dueDate;
+    private String priority;
+    private String department;
 
     // Lifecycle timestamps (strings requested, but stored as Instant for consistency)
     private Instant createdAtDateTime;     // assignment time
