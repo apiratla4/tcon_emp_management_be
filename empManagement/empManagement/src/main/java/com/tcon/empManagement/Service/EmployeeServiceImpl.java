@@ -1,235 +1,280 @@
 package com.tcon.empManagement.Service;
 
-import com.tcon.empManagement.Dto.*;
+import com.tcon.empManagement.Dto.EmployeeCreateRequest;
+import com.tcon.empManagement.Dto.EmployeeResponse;
+import com.tcon.empManagement.Dto.EmployeeUpdateRequest;
 import com.tcon.empManagement.Entity.Employee;
 import com.tcon.empManagement.Repository.EmployeeRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.NoSuchElementException;
+import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class EmployeeServiceImpl implements EmployeeService {
 
-    private final EmployeeRepository repo;
-    private final BCryptPasswordEncoder passwordEncoder;
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private EmployeeHistoryService employeeHistoryService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
-    public EmployeeResponse create(EmployeeCreateRequest request) {
-        log.info("Creating employee empId={}, email={}", request.getEmpId(), request.getEmail());
+    public EmployeeResponse createEmployee(EmployeeCreateRequest request, String createdBy) {
+        String status = request.getStatus() != null ? request.getStatus() : "ACTIVE";
 
-        if (repo.existsByEmail(request.getEmail())) {
-            log.warn("Create failed: duplicate email={}", request.getEmail());
-            throw new DuplicateKeyException("Email already exists: " + request.getEmail());
-        }
-        if (repo.existsByEmpId(request.getEmpId())) {
-            log.warn("Create failed: duplicate empId={}", request.getEmpId());
-            throw new DuplicateKeyException("empId already exists: " + request.getEmpId());
-        }
+        Employee employee = Employee.builder()
+                .title(request.getTitle())
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .phoneNumber(request.getPhoneNumber())
+                .empRole(request.getEmpRole())
+                .empId(request.getEmpId())
+                .bloodGroup(request.getBloodGroup())
+                .salary(request.getSalary())
+                .status(status)
+                .address(mapAddressFromCreateDto(request.getAddress()))
+                .bankDetails(mapBankDetailsFromCreateDto(request.getBankDetails()))
+                .emergencyContact(mapEmergencyContactFromCreateDto(request.getEmergencyContact()))
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
 
-        Employee saved = repo.save(mapToEntity(request));
-        log.info("Employee created id={}", saved.getId());
-        return mapToResponse(saved);
+        Employee saved = employeeRepository.save(employee);
+        employeeHistoryService.recordCreate(saved, createdBy);
+
+        return convertToResponse(saved);
     }
 
     @Override
-    public EmployeeResponse updateById(String id, EmployeeUpdateRequest request) {
-        log.info("Updating employee id={}", id);
-        Employee existing = repo.findById(id)
-                .orElseThrow(() -> {
-                    log.warn("Update failed: not found id={}", id);
-                    return new NoSuchElementException("Employee not found: " + id);
-                });
+    public EmployeeResponse updateEmployee(String id, EmployeeUpdateRequest request, String updatedBy) {
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Employee not found with id: " + id));
 
-        if (request.getEmail() != null && !request.getEmail().equalsIgnoreCase(existing.getEmail())) {
-            if (repo.existsByEmail(request.getEmail())) {
-                log.warn("Update failed: duplicate email={} for id={}", request.getEmail(), id);
-                throw new DuplicateKeyException("Email already exists: " + request.getEmail());
-            }
-            existing.setEmail(request.getEmail());
+        if ("INACTIVE".equals(employee.getStatus())) {
+            throw new RuntimeException("Cannot update INACTIVE employee. Please activate the employee first.");
         }
 
-        if (request.getTitle() != null) existing.setTitle(request.getTitle());
-        if (request.getFirstName() != null) existing.setFirstName(request.getFirstName());
-        if (request.getLastName() != null) existing.setLastName(request.getLastName());
-        if (request.getPassword() != null) {
-            existing.setPassword(passwordEncoder.encode(request.getPassword()));
-        }
-        if (request.getPhoneNumber() != null) existing.setPhoneNumber(request.getPhoneNumber());
-        if (request.getEmpRole() != null) existing.setEmpRole(request.getEmpRole());
-        if (request.getBloodGroup() != null) existing.setBloodGroup(request.getBloodGroup());
-        if (request.getSalary() != null) existing.setSalary(request.getSalary());
+        if (request.getTitle() != null) employee.setTitle(request.getTitle());
+        if (request.getFirstName() != null) employee.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) employee.setLastName(request.getLastName());
+        if (request.getEmail() != null) employee.setEmail(request.getEmail());
+        if (request.getPassword() != null) employee.setPassword(passwordEncoder.encode(request.getPassword()));
+        if (request.getPhoneNumber() != null) employee.setPhoneNumber(request.getPhoneNumber());
+        if (request.getEmpRole() != null) employee.setEmpRole(request.getEmpRole());
+        if (request.getBloodGroup() != null) employee.setBloodGroup(request.getBloodGroup());
+        if (request.getSalary() != null) employee.setSalary(request.getSalary());
+        if (request.getStatus() != null) employee.setStatus(request.getStatus());
+        if (request.getAddress() != null) employee.setAddress(mapAddressFromUpdateDto(request.getAddress()));
+        if (request.getBankDetails() != null) employee.setBankDetails(mapBankDetailsFromUpdateDto(request.getBankDetails()));
+        if (request.getEmergencyContact() != null) employee.setEmergencyContact(mapEmergencyContactFromUpdateDto(request.getEmergencyContact()));
 
-        if (request.getAddress() != null) {
-            Employee.Address a = Employee.Address.builder()
-                    .address1(request.getAddress().getAddress1())
-                    .address2(request.getAddress().getAddress2())
-                    .country(request.getAddress().getCountry())
-                    .city(request.getAddress().getCity())
-                    .pincode(request.getAddress().getPincode())
-                    .build();
-            existing.setAddress(a);
-        }
-        if (request.getBankDetails() != null) {
-            Employee.BankDetails b = Employee.BankDetails.builder()
-                    .bankAccount(request.getBankDetails().getBankAccount())
-                    .ifscCode(request.getBankDetails().getIfscCode())
-                    .bankName(request.getBankDetails().getBankName())
-                    .branchName(request.getBankDetails().getBranchName())
-                    .build();
-            existing.setBankDetails(b);
-        }
-        if (request.getEmergencyContact() != null) {
-            Employee.EmergencyContact ec = Employee.EmergencyContact.builder()
-                    .name(request.getEmergencyContact().getName())
-                    .contactNumber(request.getEmergencyContact().getContactNumber())
-                    .relation(request.getEmergencyContact().getRelation())
-                    .build();
-            existing.setEmergencyContact(ec);
-        }
+        employee.setUpdatedAt(Instant.now());
+        Employee updated = employeeRepository.save(employee);
+        employeeHistoryService.recordUpdate(updated, updatedBy);
 
-        Employee saved = repo.save(existing);
-        log.info("Employee updated id={}", saved.getId());
-        return mapToResponse(saved);
+        return convertToResponse(updated);
     }
 
-    @Override
-    public EmployeeResponse getById(String id) {
-        log.info("Fetching employee by id={}", id);
-        return repo.findById(id)
-                .map(emp -> {
-                    log.info("Fetched employee id={}", id);
-                    return mapToResponse(emp);
-                })
-                .orElseThrow(() -> {
-                    log.warn("Get failed: not found id={}", id);
-                    return new NoSuchElementException("Employee not found: " + id);
-                });
-    }
-
-    @Override
-    public EmployeeResponse getByEmpId(String empId) {
-        log.info("Fetching employee by empId={}", empId);
-        return repo.findByEmpId(empId)
-                .map(emp -> {
-                    log.info("Fetched employee empId={}", empId);
-                    return mapToResponse(emp);
-                })
-                .orElseThrow(() -> {
-                    log.warn("Get failed: not found empId={}", empId);
-                    return new NoSuchElementException("Employee not found: " + empId);
-                });
-    }
-
-    @Override
-    public Page<EmployeeResponse> list(Pageable pageable) {
-        log.info("Listing employees page={} size={}", pageable.getPageNumber(), pageable.getPageSize());
-        return repo.findAll(pageable).map(this::mapToResponse);
-    }
-
-    @Override
-    public void deleteById(String id) {
-        log.info("Deleting employee id={}", id);
-        if (!repo.existsById(id)) {
-            log.warn("Delete failed: not found id={}", id);
-            throw new NoSuchElementException("Employee not found: " + id);
-        }
-        repo.deleteById(id);
-        log.info("Deleted employee id={}", id);
-    }
-
-    @Override
-    public LoginResponse loginByEmpIdAndPassword(LoginRequest loginRequest) {
-        log.info("Login attempt empId={}", loginRequest.getEmpId());
-
-        Employee emp = repo.findByEmpId(loginRequest.getEmpId())
-                .orElseThrow(() -> new NoSuchElementException("Employee not found for empId: " + loginRequest.getEmpId()));
-
-        if (!passwordEncoder.matches(loginRequest.getPassword(), emp.getPassword())) {
-            log.warn("Login failed: invalid password for empId={}", loginRequest.getEmpId());
-            throw new IllegalArgumentException("Invalid password");
-        }
-
-        return new LoginResponse(
-                emp.getId(),
-                emp.getEmpId(),
-                emp.getEmail(),
-                emp.getEmpRole(),
-                "Login successful"
-        );
-    }
-
-    // --- Helper methods ---
-    private Employee mapToEntity(EmployeeCreateRequest r) {
-        return Employee.builder()
-                .title(r.getTitle())
-                .firstName(r.getFirstName())
-                .lastName(r.getLastName())
-                .email(r.getEmail())
-                .password(passwordEncoder.encode(r.getPassword()))
-                .phoneNumber(r.getPhoneNumber())
-                .empRole(r.getEmpRole())
-                .empId(r.getEmpId())
-                .bloodGroup(r.getBloodGroup())
-                .salary(r.getSalary())
-                .address(Employee.Address.builder()
-                        .address1(r.getAddress().getAddress1())
-                        .address2(r.getAddress().getAddress2())
-                        .country(r.getAddress().getCountry())
-                        .city(r.getAddress().getCity())
-                        .pincode(r.getAddress().getPincode())
-                        .build())
-                .bankDetails(Employee.BankDetails.builder()
-                        .bankAccount(r.getBankDetails().getBankAccount())
-                        .ifscCode(r.getBankDetails().getIfscCode())
-                        .bankName(r.getBankDetails().getBankName())
-                        .branchName(r.getBankDetails().getBranchName())
-                        .build())
-                .emergencyContact(Employee.EmergencyContact.builder()
-                        .name(r.getEmergencyContact().getName())
-                        .contactNumber(r.getEmergencyContact().getContactNumber())
-                        .relation(r.getEmergencyContact().getRelation())
-                        .build())
+    // Mapping from CreateRequest DTOs to Entity
+    private Employee.Address mapAddressFromCreateDto(EmployeeCreateRequest.AddressDto dto) {
+        if (dto == null) return null;
+        return Employee.Address.builder()
+                .address1(dto.getAddress1())
+                .address2(dto.getAddress2())
+                .country(dto.getCountry())
+                .city(dto.getCity())
+                .pincode(dto.getPincode())
                 .build();
     }
 
-    private EmployeeResponse mapToResponse(Employee e) {
+    private Employee.BankDetails mapBankDetailsFromCreateDto(EmployeeCreateRequest.BankDetailsDto dto) {
+        if (dto == null) return null;
+        return Employee.BankDetails.builder()
+                .bankAccount(dto.getBankAccount())
+                .ifscCode(dto.getIfscCode())
+                .bankName(dto.getBankName())
+                .branchName(dto.getBranchName())
+                .build();
+    }
+
+    private Employee.EmergencyContact mapEmergencyContactFromCreateDto(EmployeeCreateRequest.EmergencyContactDto dto) {
+        if (dto == null) return null;
+        return Employee.EmergencyContact.builder()
+                .name(dto.getName())
+                .contactNumber(dto.getContactNumber())
+                .relation(dto.getRelation())
+                .build();
+    }
+
+    // Mapping from UpdateRequest DTOs to Entity
+    private Employee.Address mapAddressFromUpdateDto(EmployeeUpdateRequest.AddressDto dto) {
+        if (dto == null) return null;
+        return Employee.Address.builder()
+                .address1(dto.getAddress1())
+                .address2(dto.getAddress2())
+                .country(dto.getCountry())
+                .city(dto.getCity())
+                .pincode(dto.getPincode())
+                .build();
+    }
+
+    private Employee.BankDetails mapBankDetailsFromUpdateDto(EmployeeUpdateRequest.BankDetailsDto dto) {
+        if (dto == null) return null;
+        return Employee.BankDetails.builder()
+                .bankAccount(dto.getBankAccount())
+                .ifscCode(dto.getIfscCode())
+                .bankName(dto.getBankName())
+                .branchName(dto.getBranchName())
+                .build();
+    }
+
+    private Employee.EmergencyContact mapEmergencyContactFromUpdateDto(EmployeeUpdateRequest.EmergencyContactDto dto) {
+        if (dto == null) return null;
+        return Employee.EmergencyContact.builder()
+                .name(dto.getName())
+                .contactNumber(dto.getContactNumber())
+                .relation(dto.getRelation())
+                .build();
+    }
+
+    // Mapping from Entity to Response DTO
+    private EmployeeResponse convertToResponse(Employee employee) {
         return EmployeeResponse.builder()
-                .id(e.getId())
-                .title(e.getTitle())
-                .firstName(e.getFirstName())
-                .lastName(e.getLastName())
-                .email(e.getEmail())
-                .phoneNumber(e.getPhoneNumber())
-                .empRole(e.getEmpRole())
-                .empId(e.getEmpId())
-                .bloodGroup(e.getBloodGroup())
-                .salary(e.getSalary())
-                .address(EmployeeResponse.Address.builder()
-                        .address1(e.getAddress().getAddress1())
-                        .address2(e.getAddress().getAddress2())
-                        .country(e.getAddress().getCountry())
-                        .city(e.getAddress().getCity())
-                        .pincode(e.getAddress().getPincode())
-                        .build())
-                .bankDetails(EmployeeResponse.BankDetails.builder()
-                        .bankAccount(e.getBankDetails().getBankAccount())
-                        .ifscCode(e.getBankDetails().getIfscCode())
-                        .bankName(e.getBankDetails().getBankName())
-                        .branchName(e.getBankDetails().getBranchName())
-                        .build())
-                .emergencyContact(EmployeeResponse.EmergencyContact.builder()
-                        .name(e.getEmergencyContact().getName())
-                        .contactNumber(e.getEmergencyContact().getContactNumber())
-                        .relation(e.getEmergencyContact().getRelation())
-                        .build())
+                .id(employee.getId())
+                .title(employee.getTitle())
+                .firstName(employee.getFirstName())
+                .lastName(employee.getLastName())
+                .email(employee.getEmail())
+                .phoneNumber(employee.getPhoneNumber())
+                .empRole(employee.getEmpRole())
+                .empId(employee.getEmpId())
+                .bloodGroup(employee.getBloodGroup())
+                .salary(employee.getSalary())
+                .status(employee.getStatus())
+                .address(mapAddressToResponseDto(employee.getAddress()))
+                .bankDetails(mapBankDetailsToResponseDto(employee.getBankDetails()))
+                .emergencyContact(mapEmergencyContactToResponseDto(employee.getEmergencyContact()))
+                .createdAt(employee.getCreatedAt())
+                .updatedAt(employee.getUpdatedAt())
                 .build();
+    }
+
+    private EmployeeResponse.AddressDto mapAddressToResponseDto(Employee.Address address) {
+        if (address == null) return null;
+        return EmployeeResponse.AddressDto.builder()
+                .address1(address.getAddress1())
+                .address2(address.getAddress2())
+                .country(address.getCountry())
+                .city(address.getCity())
+                .pincode(address.getPincode())
+                .build();
+    }
+
+    private EmployeeResponse.BankDetailsDto mapBankDetailsToResponseDto(Employee.BankDetails bankDetails) {
+        if (bankDetails == null) return null;
+        return EmployeeResponse.BankDetailsDto.builder()
+                .bankAccount(bankDetails.getBankAccount())
+                .ifscCode(bankDetails.getIfscCode())
+                .bankName(bankDetails.getBankName())
+                .branchName(bankDetails.getBranchName())
+                .build();
+    }
+
+    private EmployeeResponse.EmergencyContactDto mapEmergencyContactToResponseDto(Employee.EmergencyContact emergencyContact) {
+        if (emergencyContact == null) return null;
+        return EmployeeResponse.EmergencyContactDto.builder()
+                .name(emergencyContact.getName())
+                .contactNumber(emergencyContact.getContactNumber())
+                .relation(emergencyContact.getRelation())
+                .build();
+    }
+
+    // Implement remaining methods from interface...
+    @Override
+    public void deleteEmployee(String id, String deletedBy) {
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Employee not found with id: " + id));
+        employeeHistoryService.recordDelete(employee, deletedBy);
+        employeeRepository.deleteById(id);
+    }
+
+    @Override
+    public EmployeeResponse getEmployeeById(String id) {
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Employee not found with id: " + id));
+        return convertToResponse(employee);
+    }
+
+    @Override
+    public EmployeeResponse getEmployeeByEmpId(String empId) {
+        Employee employee = employeeRepository.findByEmpId(empId)
+                .orElseThrow(() -> new RuntimeException("Employee not found with empId: " + empId));
+        return convertToResponse(employee);
+    }
+
+    @Override
+    public EmployeeResponse getEmployeeByEmail(String email) {
+        Employee employee = employeeRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Employee not found with email: " + email));
+        return convertToResponse(employee);
+    }
+
+    @Override
+    public List<EmployeeResponse> getAllEmployees() {
+        return employeeRepository.findAll().stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<EmployeeResponse> getActiveEmployees() {
+        return employeeRepository.findByStatus("ACTIVE").stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<EmployeeResponse> getInactiveEmployees() {
+        return employeeRepository.findByStatus("INACTIVE").stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<EmployeeResponse> getEmployeesByRole(String empRole) {
+        return employeeRepository.findByEmpRole(empRole).stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public EmployeeResponse activateEmployee(String id, String activatedBy) {
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Employee not found with id: " + id));
+        employee.setStatus("ACTIVE");
+        employee.setUpdatedAt(Instant.now());
+        Employee updated = employeeRepository.save(employee);
+        employeeHistoryService.recordUpdate(updated, activatedBy);
+        return convertToResponse(updated);
+    }
+
+    @Override
+    public EmployeeResponse deactivateEmployee(String id, String deactivatedBy) {
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Employee not found with id: " + id));
+        employee.setStatus("INACTIVE");
+        employee.setUpdatedAt(Instant.now());
+        Employee updated = employeeRepository.save(employee);
+        employeeHistoryService.recordUpdate(updated, deactivatedBy);
+        return convertToResponse(updated);
     }
 }

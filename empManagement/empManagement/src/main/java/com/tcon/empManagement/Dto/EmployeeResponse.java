@@ -1,6 +1,5 @@
 package com.tcon.empManagement.Dto;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,57 +8,74 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class EmployeeResponse {
 
     private String id;
+
     private String title;
+
     private String firstName;
+
     private String lastName;
+
     private String email;
+
     private Long phoneNumber;
+
     private String empRole;
+
     private String empId;
+
     private String bloodGroup;
+
     private Double salary;
-    private Address address;
-    private BankDetails bankDetails;
-    private EmergencyContact emergencyContact;
 
+    private String status;
 
+    private AddressDto address;
+
+    private BankDetailsDto bankDetails;
+
+    private EmergencyContactDto emergencyContact;
+
+    private Instant createdAt;
+
+    private Instant updatedAt;
+
+    // Nested DTOs
     @Data
-    @NoArgsConstructor
     @AllArgsConstructor
+    @NoArgsConstructor
     @Builder
-    public static class Address {
+    public static class AddressDto {
         private String address1;
         private String address2;
         private String country;
         private String city;
         private Integer pincode;
-
     }
+
     @Data
-    @NoArgsConstructor
     @AllArgsConstructor
+    @NoArgsConstructor
     @Builder
-    public static class BankDetails {
+    public static class BankDetailsDto {
         private Long bankAccount;
         private String ifscCode;
         private String bankName;
         private String branchName;
-
     }
+
     @Data
-    @NoArgsConstructor
     @AllArgsConstructor
+    @NoArgsConstructor
     @Builder
-    public static class EmergencyContact {
+    public static class EmergencyContactDto {
         private String name;
         private Long contactNumber;
         private String relation;
-
     }
 }

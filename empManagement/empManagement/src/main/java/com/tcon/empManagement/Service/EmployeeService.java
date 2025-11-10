@@ -1,17 +1,34 @@
 package com.tcon.empManagement.Service;
 
+import com.tcon.empManagement.Dto.EmployeeCreateRequest;
+import com.tcon.empManagement.Dto.EmployeeResponse;
+import com.tcon.empManagement.Dto.EmployeeUpdateRequest;
 
-import com.tcon.empManagement.Dto.*;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import java.util.List;
 
 public interface EmployeeService {
-    EmployeeResponse create(EmployeeCreateRequest request);
-    EmployeeResponse updateById(String id, EmployeeUpdateRequest request);
-    EmployeeResponse getById(String id);
-    EmployeeResponse getByEmpId(String empId);
-    Page<EmployeeResponse> list(Pageable pageable);
-    void deleteById(String id);
-     LoginResponse loginByEmpIdAndPassword(LoginRequest loginRequest);
-}
 
+    EmployeeResponse createEmployee(EmployeeCreateRequest request, String createdBy);
+
+    EmployeeResponse updateEmployee(String id, EmployeeUpdateRequest request, String updatedBy);
+
+    void deleteEmployee(String id, String deletedBy);
+
+    EmployeeResponse getEmployeeById(String id);
+
+    EmployeeResponse getEmployeeByEmpId(String empId);
+
+    EmployeeResponse getEmployeeByEmail(String email);
+
+    List<EmployeeResponse> getAllEmployees();
+
+    List<EmployeeResponse> getActiveEmployees();
+
+    List<EmployeeResponse> getInactiveEmployees();
+
+    List<EmployeeResponse> getEmployeesByRole(String empRole);
+
+    EmployeeResponse activateEmployee(String id, String activatedBy);
+
+    EmployeeResponse deactivateEmployee(String id, String deactivatedBy);
+}

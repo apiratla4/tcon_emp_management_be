@@ -4,12 +4,18 @@ import com.tcon.empManagement.Entity.Employee;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface EmployeeRepository extends MongoRepository<Employee, String> {
-    Optional<Employee> findByEmpId(String empId);
+    // Find by unique fields
     Optional<Employee> findByEmail(String email);
-    boolean existsByEmail(String email);
-    boolean existsByEmpId(String empId);
 
+    Optional<Employee> findByEmpId(String empId);
+    // Find by status
+    List<Employee> findByStatus(String status);
+    boolean existsByEmpId(String empId);
+    // Find by role
+    List<Employee> findByEmpRole(String empRole);
+    boolean existsByEmail(String email);
 }
