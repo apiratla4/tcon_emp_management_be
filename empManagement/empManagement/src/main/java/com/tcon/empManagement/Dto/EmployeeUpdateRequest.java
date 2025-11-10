@@ -15,7 +15,7 @@ public class EmployeeUpdateRequest {
     private String firstName;
 
     private String lastName;
-
+    private String title;
     @Email @Size(max = 120)
     private String email;
 
@@ -28,7 +28,7 @@ public class EmployeeUpdateRequest {
     @Size(max = 10)
     @Pattern(regexp = "^(A|B|AB|O)[+-]?$")
     private String bloodGroup;
-
+    private String password;
     @DecimalMin(value = "0.0", inclusive = true)
     private Double salary;
 

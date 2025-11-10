@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/task-history")
@@ -102,4 +103,45 @@ public class EmployeeTaskHistoryController {
             throw ex;
         }
     }
+
+    @DeleteMapping("/by-emp/{empId}")
+    public ResponseEntity<Map<String, Object>> deleteAllByEmpWithCount(@PathVariable String empId) {
+        log.info("DELETE /api/task-history/by-emp/{}", empId);
+        try {
+            long deleted = service.deleteAllByEmpId(empId);
+            log.info("Deleted {} records for empId={}", deleted, empId);
+            return ResponseEntity.ok(Map.of("deleted", deleted));
+        } catch (Exception ex) {
+            log.error("DELETE /api/task-history/by-emp/{} failed", empId, ex);
+            throw ex;
+        }
+    }
+
+    // Update guarded by both id and empId
+    @PatchMapping("/{id}/emp/{empId}")
+    public EmployeeTaskHistoryResponse updateByIdAndEmp(@PathVariable String id,
+                                                        @PathVariable String empId,
+                                                        @Valid @RequestBody EmployeeTaskHistoryUpdateRequest req) {
+        log.info("PATCH /api/task-history/{}/emp/{}", id, empId);
+        try {
+            return service.updateByIdAndEmpId(id, empId, req);
+        } catch (Exception ex) {
+            log.error("PATCH /api/task-history/{}/emp/{} failed", id, empId, ex);
+            throw ex;
+        }
+    }
+
+    // Get using only empId (latest or list based on your need)
+    @GetMapping("/by-emp/{empId}/latest")
+    public EmployeeTaskHistoryResponse getLatestByEmpId(@PathVariable String empId) {
+        log.info("GET /api/task-history/by-emp/{}/latest", empId);
+        try {
+            return service.getLatestByEmpId(empId);
+        } catch (Exception ex) {
+            log.error("GET /api/task-history/by-emp/{}/latest failed", empId, ex);
+            throw ex;
+        }
+    }
+
+
 }

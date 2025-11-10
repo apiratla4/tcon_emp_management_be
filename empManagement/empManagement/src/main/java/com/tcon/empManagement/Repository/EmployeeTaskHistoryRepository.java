@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 public interface EmployeeTaskHistoryRepository extends MongoRepository<EmployeeTaskHistory, String> {
 
@@ -14,7 +15,6 @@ public interface EmployeeTaskHistoryRepository extends MongoRepository<EmployeeT
 
     List<EmployeeTaskHistory> findByStatusOrderByCreatedAtDesc(String status);
 
-    List<EmployeeTaskHistory> findByEmpIdAndStatusOrderByCreatedAtDesc(String empId, String status);
-
-    List<EmployeeTaskHistory> findByDueDateBetween(Instant from, Instant to);
+    Optional<EmployeeTaskHistory> findByIdAndEmpId(String id, String empId);
+    long deleteByEmpId(String empId);
 }

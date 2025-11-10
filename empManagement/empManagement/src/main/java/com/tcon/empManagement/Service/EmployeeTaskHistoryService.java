@@ -24,5 +24,8 @@ public interface EmployeeTaskHistoryService {
     List<EmployeeTaskHistoryResponse> listByStatus(String status);
 
     void deleteById(String id);
+    EmployeeTaskHistoryResponse updateByIdAndEmpId(String id, String empId, EmployeeTaskHistoryUpdateRequest request);  // [web:355]
+    EmployeeTaskHistoryResponse getLatestByEmpId(String empId);
+    public long deleteAllByEmpId(String empId);
 }
 

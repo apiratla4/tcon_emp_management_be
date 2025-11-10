@@ -1,15 +1,14 @@
 package com.tcon.empManagement.Service;
+
+import com.tcon.empManagement.Dto.*;
 import com.tcon.empManagement.Entity.Employee;
 import com.tcon.empManagement.Repository.EmployeeRepository;
-import com.tcon.empManagement.Dto.EmployeeCreateRequest;
-import com.tcon.empManagement.Dto.EmployeeResponse;
-import com.tcon.empManagement.Dto.EmployeeUpdateRequest;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.NoSuchElementException;
@@ -20,11 +19,12 @@ import java.util.NoSuchElementException;
 public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository repo;
+    private final BCryptPasswordEncoder passwordEncoder;
 
     @Override
     public EmployeeResponse create(EmployeeCreateRequest request) {
         log.info("Creating employee empId={}, email={}", request.getEmpId(), request.getEmail());
-        // try/catch only for predictable persistence errors; let ControllerAdvice log stack trace
+
         if (repo.existsByEmail(request.getEmail())) {
             log.warn("Create failed: duplicate email={}", request.getEmail());
             throw new DuplicateKeyException("Email already exists: " + request.getEmail());
@@ -55,8 +55,13 @@ public class EmployeeServiceImpl implements EmployeeService {
             }
             existing.setEmail(request.getEmail());
         }
+
+        if (request.getTitle() != null) existing.setTitle(request.getTitle());
         if (request.getFirstName() != null) existing.setFirstName(request.getFirstName());
         if (request.getLastName() != null) existing.setLastName(request.getLastName());
+        if (request.getPassword() != null) {
+            existing.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
         if (request.getPhoneNumber() != null) existing.setPhoneNumber(request.getPhoneNumber());
         if (request.getEmpRole() != null) existing.setEmpRole(request.getEmpRole());
         if (request.getBloodGroup() != null) existing.setBloodGroup(request.getBloodGroup());
@@ -140,11 +145,35 @@ public class EmployeeServiceImpl implements EmployeeService {
         log.info("Deleted employee id={}", id);
     }
 
+    @Override
+    public LoginResponse loginByEmpIdAndPassword(LoginRequest loginRequest) {
+        log.info("Login attempt empId={}", loginRequest.getEmpId());
+
+        Employee emp = repo.findByEmpId(loginRequest.getEmpId())
+                .orElseThrow(() -> new NoSuchElementException("Employee not found for empId: " + loginRequest.getEmpId()));
+
+        if (!passwordEncoder.matches(loginRequest.getPassword(), emp.getPassword())) {
+            log.warn("Login failed: invalid password for empId={}", loginRequest.getEmpId());
+            throw new IllegalArgumentException("Invalid password");
+        }
+
+        return new LoginResponse(
+                emp.getId(),
+                emp.getEmpId(),
+                emp.getEmail(),
+                emp.getEmpRole(),
+                "Login successful"
+        );
+    }
+
+    // --- Helper methods ---
     private Employee mapToEntity(EmployeeCreateRequest r) {
         return Employee.builder()
+                .title(r.getTitle())
                 .firstName(r.getFirstName())
                 .lastName(r.getLastName())
                 .email(r.getEmail())
+                .password(passwordEncoder.encode(r.getPassword()))
                 .phoneNumber(r.getPhoneNumber())
                 .empRole(r.getEmpRole())
                 .empId(r.getEmpId())
@@ -174,6 +203,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private EmployeeResponse mapToResponse(Employee e) {
         return EmployeeResponse.builder()
                 .id(e.getId())
+                .title(e.getTitle())
                 .firstName(e.getFirstName())
                 .lastName(e.getLastName())
                 .email(e.getEmail())

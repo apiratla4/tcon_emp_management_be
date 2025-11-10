@@ -16,15 +16,19 @@ public class Employee {
     @Id
     private String id;
 
+    @NotBlank @Size(max = 40)
+    private String title;
 
     private String firstName;
-
 
     private String lastName;
 
     @NotBlank @Email @Size(max = 120)
     @Indexed(unique = true)
     private String email;
+
+    @NotBlank @Size(min = 8, max = 120)
+    private String password;
 
     @NotNull @Min(6000000000L) @Max(9999999999L)
     @Indexed

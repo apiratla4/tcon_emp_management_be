@@ -144,6 +144,74 @@ public class EmployeeTaskHistoryServiceImpl implements EmployeeTaskHistoryServic
         log.info("Task deleted id={}", id);
     }
 
+    @Override
+    public EmployeeTaskHistoryResponse updateByIdAndEmpId(String id, String empId, EmployeeTaskHistoryUpdateRequest request) {
+        log.info("Updating task guarded by id+empId id={} empId={}", id, empId);
+        try {
+            EmployeeTaskHistory existing = repo.findByIdAndEmpId(id, empId).orElseThrow(() -> {
+                log.warn("Task not found id={} empId={}", id, empId);
+                return new NoSuchElementException("Task not found for id and empId");
+            });
+
+            if (request.getTaskName() != null) existing.setTaskName(request.getTaskName());
+            if (request.getTaskDescription() != null) existing.setTaskDescription(request.getTaskDescription());
+            if (request.getDueDate() != null) existing.setDueDate(request.getDueDate());
+
+            if (request.getStatus() != null) {
+                String old = existing.getStatus();
+                String nowStatus = request.getStatus();
+                existing.setStatus(nowStatus);
+
+                Instant now = Instant.now();
+                if ("PENDING".equalsIgnoreCase(nowStatus) && existing.getUpdatedAtDateTime() == null
+                        && request.getUpdatedAtDateTime() == null) {
+                    existing.setUpdatedAtDateTime(now);
+                }
+                if ("COMPLETED".equalsIgnoreCase(nowStatus) && existing.getCompletedAtDateTime() == null
+                        && request.getCompletedAtDateTime() == null) {
+                    existing.setCompletedAtDateTime(now);
+                }
+                log.info("Status change {} -> {} for id={} empId={}", old, nowStatus, id, empId);
+            }
+
+            if (request.getUpdatedAtDateTime() != null) existing.setUpdatedAtDateTime(request.getUpdatedAtDateTime());
+            if (request.getCompletedAtDateTime() != null) existing.setCompletedAtDateTime(request.getCompletedAtDateTime());
+
+            EmployeeTaskHistory saved = repo.save(existing);
+            log.info("Task updated id={} empId={}", saved.getId(), empId);
+            return mapToResponse(saved);
+        } catch (Exception ex) {
+            log.error("Update by id+empId failed id={} empId={}", id, empId, ex);
+            throw ex;
+        }
+    }
+
+    @Override
+    public EmployeeTaskHistoryResponse getLatestByEmpId(String empId) {
+        log.info("Fetching latest task by empId={}", empId);
+        List<EmployeeTaskHistory> items = repo.findByEmpIdOrderByCreatedAtDesc(empId);
+        if (items.isEmpty()) {
+            log.warn("No tasks for empId={}", empId);
+            throw new NoSuchElementException("No tasks for empId: " + empId);
+        }
+        EmployeeTaskHistory top = items.get(0);
+        log.info("Fetched latest task id={} empId={}", top.getId(), empId);
+        return mapToResponse(top);
+    }
+
+@Override
+    public long deleteAllByEmpId(String empId) {
+        log.info("Deleting all task-history by empId={}", empId);
+        try {
+            long count = repo.deleteByEmpId(empId);
+            log.info("Deleted count={} for empId={}", count, empId);
+            return count;
+        } catch (Exception ex) {
+            log.error("Bulk delete by empId failed empId={}", empId, ex);
+            throw ex;
+        }
+    }
+
     private EmployeeTaskHistoryResponse mapToResponse(EmployeeTaskHistory e) {
         return EmployeeTaskHistoryResponse.builder()
                 .id(e.getId())

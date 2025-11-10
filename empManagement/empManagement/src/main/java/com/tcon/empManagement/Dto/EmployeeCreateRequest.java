@@ -14,11 +14,9 @@ import java.time.Instant;
 @Builder
 public class EmployeeCreateRequest {
 
-
     private String firstName;
-
     private String lastName;
-
+    private String title;
     @NotBlank @Email @Size(max = 120)
     private String email;
 
@@ -48,7 +46,7 @@ public class EmployeeCreateRequest {
     @NotNull
     private EmergencyContactDto emergencyContact;
 
-
+    private String password;
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

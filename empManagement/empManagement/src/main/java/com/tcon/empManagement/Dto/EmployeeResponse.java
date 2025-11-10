@@ -15,6 +15,7 @@ import java.time.Instant;
 public class EmployeeResponse {
 
     private String id;
+    private String title;
     private String firstName;
     private String lastName;
     private String email;
