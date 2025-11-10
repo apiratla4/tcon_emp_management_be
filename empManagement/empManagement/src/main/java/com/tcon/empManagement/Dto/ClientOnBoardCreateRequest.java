@@ -1,87 +1,72 @@
 package com.tcon.empManagement.Dto;
 
-import lombok.*;
-import java.time.Instant;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
 
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
-public class ClientOnBoardCreateRequest {
-    private String projectId;
-    private ClientInfo clientInfo;
-    private ProjectType projectType;
-    private Website website;
-    private Ecom ecom;
-    private Mobile mobile;
-    private Seo seo;
-    private Content content;
-    private Marketing marketing;
-    private Technical technical;
-    private UiUx uiux;
 
-    // Nested DTOs (same shape as entity for simplicity)
-    @Data @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class ClientInfo {
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class ClientOnBoardCreateRequest {
+
+    @NotBlank(message = "Project ID is required")
+    private String projectId;
+
+    @NotNull(message = "Client info is required")
+    private ClientInfoDto clientInfo;
+
+    private ProjectTypeDto projectType;
+
+    private TechnicalDto technical;
+
+    private UiUxDto uiux;
+
+    private List<FileUploadDto> fileUploads;
+
+    private String description;
+
+    private String note;
+
+    @NotNull(message = "Contact info is required")
+    private ContactInfoDto contactInfo;
+
+    // Nested DTOs
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ClientInfoDto {
         private String businessName;
-        private String stakeholders;
         private String projectName;
-        private Integer budget;
-        private Integer timelineWeeks;
+        private String clientAddress;
+        private String businessPhoneNo;
     }
-    @Data @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class ProjectType {
-        private String features;
-        private String userRoles;
-        private String integrations;
-        private String featuresCsv;
-        private String userRolesCsv;
-        private String integrationsCsv;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ProjectTypeDto {
+        private String websiteDev;
+        private String ecommerceApp;
+        private String mobileApp;
+        private String seoServices;
+        private String contentManagement;
+        private String digitalMarketing;
     }
-    @Data @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class Website {
-        private Section header;
-        private Section footer;
-        private Section home;
-        private Section auth;
-        private Section settings;
-        @Data @NoArgsConstructor @AllArgsConstructor @Builder
-        public static class Section {
-            private List<String> items;
-            private String notes;
-        }
-    }
-    @Data @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class Ecom {
-        private String variants;
-        private String taxRegions;
-        private String gateways;
-        private String shipping;
-    }
-    @Data @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class Mobile {
-        private String targets;
-        private String approach;
-        private String push;
-        private String offline;
-    }
-    @Data @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class Seo {
-        private String pages;
-        private String schema;
-        private String kpis;
-        private String cadence;
-    }
-    @Data @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class Content {
-        private String types;
-        private String tone;
-    }
-    @Data @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class Marketing {
-        private String channels;
-        private String split;
-    }
-    @Data @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class Technical {
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class TechnicalDto {
         private List<String> preferredStack;
         private String dbChoice;
         private String hosting;
@@ -92,10 +77,36 @@ public class ClientOnBoardCreateRequest {
         private String releaseStrategy;
         private String supportSla;
     }
-    @Data @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class UiUx {
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UiUxDto {
         private String brandColors;
         private Boolean hasWireframes;
         private Boolean responsive;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class FileUploadDto {
+        private String fileName;
+        private String fileType;
+        private String fileUrl;
+        private Long fileSize;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ContactInfoDto {
+        private String contactName;
+        private String contactNumber;
+        private String contactEmail;
+        private String address;
     }
 }

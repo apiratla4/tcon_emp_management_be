@@ -37,8 +37,6 @@ public class Employee {
     @NotBlank @Size(max = 40)
     private String empRole;
 
-    @NotBlank @Size(min = 4, max = 40)
-    @Pattern(regexp = "EMP-[A-Z0-9]{4,20}")
     @Indexed(unique = true)
     private String empId;
 

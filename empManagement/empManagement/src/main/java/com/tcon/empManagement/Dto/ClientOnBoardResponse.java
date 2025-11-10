@@ -1,23 +1,52 @@
 package com.tcon.empManagement.Dto;
 
-import lombok.*;
-import java.time.Instant;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class ClientOnBoardResponse {
+
     private String id;
+
     private String projectId;
-    private ClientOnBoardCreateRequest.ClientInfo clientInfo;
-    private ClientOnBoardCreateRequest.ProjectType projectType;
-    private ClientOnBoardCreateRequest.Website website;
-    private ClientOnBoardCreateRequest.Ecom ecom;
-    private ClientOnBoardCreateRequest.Mobile mobile;
-    private ClientOnBoardCreateRequest.Seo seo;
-    private ClientOnBoardCreateRequest.Content content;
-    private ClientOnBoardCreateRequest.Marketing marketing;
-    private ClientOnBoardCreateRequest.Technical technical;
-    private ClientOnBoardCreateRequest.UiUx uiux;
-    private Instant createdAt;
-    private Instant updatedAt;
+
+    private ClientOnBoardCreateRequest.ClientInfoDto clientInfo;
+
+    private ClientOnBoardCreateRequest.ProjectTypeDto projectType;
+
+    private ClientOnBoardCreateRequest.TechnicalDto technical;
+
+    private ClientOnBoardCreateRequest.UiUxDto uiux;
+
+    private List<FileUploadResponseDto> fileUploads;
+
+    private String description;
+
+    private String note;
+
+    private ClientOnBoardCreateRequest.ContactInfoDto contactInfo;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class FileUploadResponseDto {
+        private String fileName;
+        private String fileType;
+        private String fileUrl;
+        private Long fileSize;
+        private LocalDateTime uploadedAt;
+    }
 }
