@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,13 +36,19 @@ public class ClientOnBoardController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ClientOnBoardResponse> createClientOnBoardWithFiles(
-            @RequestPart("data") @Valid ClientOnBoardCreateRequest request,
+            @RequestPart("data") String dataJson,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
 
-        log.info("Creating client onboard for project: {}", request.getProjectId());
+        log.info("Creating client onboard (multipart) with {} file(s)",
+                files != null ? files.size() : 0);
 
         try {
-            // Upload files if provided
+            // ✅ Fix: manually parse JSON string into your DTO
+            ObjectMapper mapper = new ObjectMapper();
+            ClientOnBoardCreateRequest request =
+                    mapper.readValue(dataJson, ClientOnBoardCreateRequest.class);
+
+            // ✅ Keep your existing file upload logic
             if (files != null && !files.isEmpty()) {
                 log.info("Uploading {} files", files.size());
                 List<ClientOnBoardCreateRequest.FileUploadDto> fileUploadDtos = new ArrayList<>();
@@ -49,12 +56,13 @@ public class ClientOnBoardController {
                 for (MultipartFile file : files) {
                     String fileName = fileUploadService.uploadFile(file);
 
-                    ClientOnBoardCreateRequest.FileUploadDto fileDto = ClientOnBoardCreateRequest.FileUploadDto.builder()
-                            .fileName(fileName)
-                            .fileType(file.getContentType())
-                            .fileUrl("/api/files/download/" + fileName)
-                            .fileSize(file.getSize())
-                            .build();
+                    ClientOnBoardCreateRequest.FileUploadDto fileDto =
+                            ClientOnBoardCreateRequest.FileUploadDto.builder()
+                                    .fileName(fileName)
+                                    .fileType(file.getContentType())
+                                    .fileUrl("/api/files/download/" + fileName)
+                                    .fileSize(file.getSize())
+                                    .build();
 
                     fileUploadDtos.add(fileDto);
                 }
@@ -63,14 +71,15 @@ public class ClientOnBoardController {
             }
 
             ClientOnBoardResponse response = clientOnBoardService.createClientOnBoard(request);
-            log.info("Client onboard created successfully: {}", response.getId());
+            log.info("✅ Client onboard created successfully: {}", response.getId());
             return new ResponseEntity<>(response, HttpStatus.CREATED);
 
         } catch (Exception e) {
-            log.error("Error creating client onboard: {}", e.getMessage(), e);
+            log.error("❌ Error creating client onboard: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to create client onboard: " + e.getMessage());
         }
     }
+
 
     // ============ CREATE WITHOUT FILE UPLOAD (JSON ONLY) ============
 
@@ -93,13 +102,16 @@ public class ClientOnBoardController {
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ClientOnBoardResponse> updateClientOnBoardWithFiles(
             @PathVariable String id,
-            @RequestPart("data") ClientOnBoardUpdateRequest request,
+            @RequestPart("data") String dataJson,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
 
-        log.info("Updating client onboard: {}", id);
+        log.info("Updating client onboard: {} (multipart)", id);
 
         try {
-            // Upload new files if provided
+            ObjectMapper mapper = new ObjectMapper();
+            ClientOnBoardUpdateRequest request =
+                    mapper.readValue(dataJson, ClientOnBoardUpdateRequest.class);
+
             if (files != null && !files.isEmpty()) {
                 log.info("Uploading {} new files", files.size());
                 List<ClientOnBoardCreateRequest.FileUploadDto> fileUploadDtos = new ArrayList<>();
@@ -107,12 +119,13 @@ public class ClientOnBoardController {
                 for (MultipartFile file : files) {
                     String fileName = fileUploadService.uploadFile(file);
 
-                    ClientOnBoardCreateRequest.FileUploadDto fileDto = ClientOnBoardCreateRequest.FileUploadDto.builder()
-                            .fileName(fileName)
-                            .fileType(file.getContentType())
-                            .fileUrl("/api/files/download/" + fileName)
-                            .fileSize(file.getSize())
-                            .build();
+                    ClientOnBoardCreateRequest.FileUploadDto fileDto =
+                            ClientOnBoardCreateRequest.FileUploadDto.builder()
+                                    .fileName(fileName)
+                                    .fileType(file.getContentType())
+                                    .fileUrl("/api/files/download/" + fileName)
+                                    .fileSize(file.getSize())
+                                    .build();
 
                     fileUploadDtos.add(fileDto);
                 }
@@ -120,15 +133,17 @@ public class ClientOnBoardController {
                 request.setFileUploads(fileUploadDtos);
             }
 
-            ClientOnBoardResponse response = clientOnBoardService.updateClientOnBoard(id, request);
-            log.info("Client onboard updated successfully: {}", id);
+            ClientOnBoardResponse response =
+                    clientOnBoardService.updateClientOnBoard(id, request);
+            log.info("✅ Client onboard updated successfully: {}", id);
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            log.error("Error updating client onboard: {}", e.getMessage(), e);
+            log.error("❌ Error updating client onboard: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to update client onboard: " + e.getMessage());
         }
     }
+
 
     // ============ UPDATE WITHOUT FILE UPLOAD (JSON ONLY) ============
 
