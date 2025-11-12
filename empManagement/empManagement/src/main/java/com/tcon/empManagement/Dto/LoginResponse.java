@@ -17,14 +17,15 @@ public class LoginResponse {
     private String status;
     private String message;
     private boolean success;
-
     // Custom constructor with 5 parameters
-    public LoginResponse(String id, String empId, String email, String empRole, String message) {
+    public LoginResponse(String id, String empId, String email, String empRole, String message,String firstName,String lastName) {
         this.id = id;
         this.empId = empId;
         this.email = email;
         this.empRole = empRole;
         this.message = message;
         this.success = true;
+        this.firstName=firstName;
+        this.lastName=lastName;
     }
 }
