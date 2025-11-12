@@ -30,6 +30,8 @@ public class ClientOnBoardServiceImpl implements ClientOnBoardService {
                 .contactInfo(mapContactInfo(request.getContactInfo()))
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
+                .description(request.getDescription())
+                .note(request.getNote())
                 .build();
 
         ClientOnBoard saved = clientOnBoardRepository.save(clientOnBoard);

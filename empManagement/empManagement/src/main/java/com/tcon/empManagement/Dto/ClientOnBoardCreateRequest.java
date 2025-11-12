@@ -76,6 +76,8 @@ public class ClientOnBoardCreateRequest {
         private String deployModel;
         private String releaseStrategy;
         private String supportSla;
+        private String description;
+        private String note;
     }
 
     @Data
