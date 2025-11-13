@@ -106,4 +106,15 @@ public class Employee {
         @NotBlank @Size(max = 40)
         private String relation;
     }
+
+    public String getFullName() {
+        String first = (this.firstName != null && !this.firstName.isEmpty()) ? this.firstName : "";
+        String last = (this.lastName != null && !this.lastName.isEmpty()) ? this.lastName : "";
+
+        if (first.isEmpty() && last.isEmpty()) {
+            return "Unknown";
+        }
+
+        return (first + " " + last).trim();
+    }
 }
