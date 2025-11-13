@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +50,23 @@ public class EmployeeDocumentController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    /** File upload endpoint */
+    @PostMapping("/upload")
+    public ResponseEntity<Map<String, Object>> uploadDocument(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("empId") String empId,
+            @RequestParam(value = "note", required = false) String note,
+            @RequestParam("updatedBy") String updatedBy) {
+
+        Map<String, Object> result = documentService.uploadDocument(file, empId, note, updatedBy);
+        if (Boolean.TRUE.equals(result.get("success"))) {
+            return ResponseEntity.ok(result);
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+        }
+    }
+
 
     /**
      * Update an existing employee document

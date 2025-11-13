@@ -12,23 +12,29 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "employee_documents")
-public class EmployeeDocument {
+@Document(collection = "client_documents")
+public class ClientDocument {
 
     @Id
     private String id;
 
-    @Field("emp_id")
-    private String empId;
+    @Field("business_name")
+    private String businessName;
 
-    @Field("emp_name")
-    private String empName; // firstName + lastName from Employee table
+    @Field("project_name")
+    private String projectName;
+
+    @Field("contact_name")
+    private String contactName; // Getting from ClientOnBoard table
 
     @Field("file_name")
     private String fileName;
 
     @Field("file_size")
-    private Long fileSize; // in bytes
+    private Long fileSize;
+
+    @Field("file_type")
+    private String fileType;
 
     @Field("file_url")
     private String fileUrl;
@@ -44,6 +50,4 @@ public class EmployeeDocument {
 
     @Field("updated_by")
     private String updatedBy;
-
-    // Employee ID who updated
 }

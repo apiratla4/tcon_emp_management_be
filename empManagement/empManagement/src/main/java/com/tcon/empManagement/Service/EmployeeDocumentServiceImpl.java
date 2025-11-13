@@ -11,9 +11,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -298,6 +302,57 @@ public class EmployeeDocumentServiceImpl implements EmployeeDocumentService {
         }
     }
 
+    @Override
+    @Transactional
+    public Map<String, Object> uploadDocument(MultipartFile file, String empId, String note, String updatedBy) {
+        logger.info("Uploading employee document file: {}, empId: {}", file.getOriginalFilename(), empId);
+
+
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String uploadDir = System.getProperty("user.home") + "/uploads/";
+            File directory = new File(uploadDir);
+            if (!directory.exists()) directory.mkdirs();
+
+            // Sanitize filename!
+            String safeFileName = file.getOriginalFilename()
+                    .replaceAll("\\s+", "_")
+                    .replaceAll("[^a-zA-Z0-9._-]", "");
+
+            String filePath = uploadDir + safeFileName;
+
+            file.transferTo(new File(filePath));
+
+            String fileUrl = "http://localhost:8080/uploads/" + safeFileName;
+
+            EmployeeDocument doc = new EmployeeDocument();
+            Employee employee = employeeRepository.findByEmpId(empId).orElse(null);
+            String fullName = (employee != null) ? employee.getFullName() : empId;
+            doc.setEmpName(fullName);
+            doc.setEmpId(empId);
+            doc.setEmpName(empId); // Or fetch name from Employee table if available
+            doc.setFileName(file.getOriginalFilename());
+            doc.setFileSize(file.getSize());
+            doc.setFileUrl(fileUrl);
+            doc.setNote(note);
+            doc.setCreatedAt(LocalDateTime.now());
+            doc.setUpdatedAt(LocalDateTime.now());
+            doc.setUpdatedBy(updatedBy);
+
+            documentRepository.save(doc);
+            response.put("success", true);
+            response.put("data", doc);
+            logger.info("Document uploaded and saved with ID: {}", doc.getId());
+            return response;
+        } catch (Exception e) {
+            logger.error("Error uploading employee document file: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            return response;
+        }
+    }
+
+
     /**
      * Helper method to map entity to response DTO
      */
@@ -315,4 +370,5 @@ public class EmployeeDocumentServiceImpl implements EmployeeDocumentService {
         responseDto.setUpdatedBy(document.getUpdatedBy());
         return responseDto;
     }
+
 }

@@ -2,6 +2,7 @@ package com.tcon.empManagement.Repository;
 
 import com.tcon.empManagement.Entity.Employee;
 
+import com.tcon.empManagement.Entity.EmployeeDocument;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
@@ -23,4 +24,8 @@ public interface EmployeeRepository extends MongoRepository<Employee, String> {
     // Custom query to fetch only firstName and lastName
     @Query(value = "{ 'empId': ?0 }", fields = "{ 'firstName': 1, 'lastName': 1, 'empId': 1 }")
     Optional<Employee> findNameByEmpId(String empId);
+
+    void deleteByEmpId(String empId);
+
+    void deleteById(String id);
 }
