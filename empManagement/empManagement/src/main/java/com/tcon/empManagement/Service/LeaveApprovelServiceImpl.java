@@ -72,6 +72,41 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
         return repo.findAll(pageable).map(this::mapResponse);
     }
 
+    // Find leaves by status (dashboard, HR)
+    @Override
+    public List<LeaveApprovelResponse> getByStatus(String status) {
+        log.info("Fetching leaves with status={}", status);
+        return repo.findByStatusOrderByCreateDateDesc(status)
+                .stream().map(this::mapResponse).toList();
+    }
+
+    // Get leaves for a date range (summary/statistics)
+    @Override
+    public List<LeaveApprovelResponse> getByDateRange(LocalDate from, LocalDate to) {
+        log.info("Fetching leaves from {} to {}", from, to);
+        return repo.findByFromDateGreaterThanEqualAndToDateLessThanEqualOrderByCreateDateDesc(from, to)
+                .stream().map(this::mapResponse).toList();
+    }
+
+    // Delete/cancel leave request
+    @Override
+    public boolean deleteLeave(String id) {
+        log.info("Deleting leave id={}", id);
+        if (!repo.existsById(id)) return false;
+        repo.deleteById(id);
+        return true;
+    }
+
+    // Get a single leave request by ID
+    @Override
+    public LeaveApprovelResponse getById(String id) {
+        log.info("Fetching leave by id={}", id);
+        LeaveApprovel leave = repo.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("LeaveApprovel not found: " + id));
+        return mapResponse(leave);
+    }
+
+
     private LeaveApprovelResponse mapResponse(LeaveApprovel l) {
         return LeaveApprovelResponse.builder()
                 .id(l.getId())

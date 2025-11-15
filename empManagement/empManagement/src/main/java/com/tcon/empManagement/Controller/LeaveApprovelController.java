@@ -13,8 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.List;
-
 @RestController
 @RequestMapping("/api/leave-approvel")
 @RequiredArgsConstructor
@@ -33,8 +33,7 @@ public class LeaveApprovelController {
 
     // Approve/Reject: PATCH, HR/Owner dashboard
     @PatchMapping("/{id}/status")
-    public LeaveApprovelResponse updateStatus(@PathVariable String id,
-                                              @Valid @RequestBody LeaveApprovelUpdateStatusRequest req) {
+    public LeaveApprovelResponse updateStatus(@PathVariable String id, @Valid @RequestBody LeaveApprovelUpdateStatusRequest req) {
         log.info("PATCH /api/leave-approvel/{}/status status={}", id, req.getStatus());
         return service.updateStatus(id, req);
     }
@@ -48,10 +47,37 @@ public class LeaveApprovelController {
 
     // Get all (paged) for HR/Owner dashboard
     @GetMapping
-    public Page<LeaveApprovelResponse> getAll(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+    public Page<LeaveApprovelResponse> getAll(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         log.info("GET /api/leave-approvel?page={}&size={}", page, size);
         return service.getAll(PageRequest.of(page, size));
+    }
+
+    // Get leaves by status
+    @GetMapping("/status/{status}")
+    public List<LeaveApprovelResponse> getByStatus(@PathVariable String status) {
+        log.info("GET /api/leave-approvel/status/{}", status);
+        return service.getByStatus(status);
+    }
+
+    // Get leaves for a date range
+    @GetMapping("/range")
+    public List<LeaveApprovelResponse> getByDateRange(@RequestParam LocalDate from, @RequestParam LocalDate to) {
+        log.info("GET /api/leave-approvel/range?from={}&to={}", from, to);
+        return service.getByDateRange(from, to);
+    }
+
+    // Cancel/Delete a leave request
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteLeave(@PathVariable String id) {
+        log.info("DELETE /api/leave-approvel/{}", id);
+        boolean deleted = service.deleteLeave(id);
+        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    // Get a single leave by ID
+    @GetMapping("/{id}")
+    public LeaveApprovelResponse getById(@PathVariable String id) {
+        log.info("GET /api/leave-approvel/{}", id);
+        return service.getById(id);
     }
 }
