@@ -6,13 +6,19 @@ import lombok.*;
 
 import java.time.LocalDate;
 
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class LeaveApprovelCreateRequest {
     @NotBlank
     private String empId;
 
     @NotBlank
     private String empName; // should be concatenated as firstName + " " + lastName
+
+    @NotBlank
+    private String empRole; // "EMPLOYEE", "MANAGER", "HR", "CEO"
 
     @NotBlank
     private String typeOfLeave;
@@ -26,3 +32,4 @@ public class LeaveApprovelCreateRequest {
     @NotBlank
     private String reason;
 }
+

@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -25,7 +26,7 @@ import java.util.Optional;
 public class LeaveApprovelServiceImpl implements LeaveApprovelService {
 
     private final LeaveApprovelRepository repo;
-    private final AttendanceService attendanceService; // This should provide findByEmpIdAndDate and save
+    private final AttendanceService attendanceService;
 
     @Override
     public LeaveApprovelResponse applyLeave(LeaveApprovelCreateRequest req) {
@@ -34,6 +35,7 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
         LeaveApprovel entity = LeaveApprovel.builder()
                 .empId(req.getEmpId())
                 .empName(req.getEmpName())
+                .empRole(req.getEmpRole())
                 .typeOfLeave(req.getTypeOfLeave())
                 .fromDate(req.getFromDate())
                 .toDate(req.getToDate())
@@ -119,6 +121,22 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
         LeaveApprovel leave = repo.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("LeaveApprovel not found: " + id));
         return mapResponse(leave);
+    }
+
+    // Role-based leave view
+    @Override
+    public List<LeaveApprovelResponse> getLeavesForRole(String role) {
+        log.info("Fetching leaves visible for role={}", role);
+        String normalized = role == null ? "" : role.toUpperCase(Locale.ROOT);
+
+        if ("CEO".equals(normalized) || "HR".equals(normalized)) {
+            return repo.findAll().stream().map(this::mapResponse).toList();
+        }
+        if ("MANAGER".equals(normalized)) {
+            return repo.findByEmpRoleOrderByCreateDateDesc("EMPLOYEE")
+                    .stream().map(this::mapResponse).toList();
+        }
+        return List.of();
     }
 
     private LeaveApprovelResponse mapResponse(LeaveApprovel l) {

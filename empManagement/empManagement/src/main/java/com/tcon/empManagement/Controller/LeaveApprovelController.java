@@ -80,4 +80,11 @@ public class LeaveApprovelController {
         log.info("GET /api/leave-approvel/{}", id);
         return service.getById(id);
     }
+
+    @GetMapping("/view")
+    public List<LeaveApprovelResponse> viewForRole(@RequestParam String role) {
+        log.info("GET /api/leave-approvel/view?roles={}", role);
+        return service.getLeavesForRole(role);
+    }
+
 }
