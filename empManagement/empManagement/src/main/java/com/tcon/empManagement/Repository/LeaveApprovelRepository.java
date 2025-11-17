@@ -13,4 +13,6 @@ public interface LeaveApprovelRepository extends MongoRepository<LeaveApprovel, 
 
     List<LeaveApprovel> findByFromDateGreaterThanEqualAndToDateLessThanEqualOrderByCreateDateDesc(
             LocalDate from, LocalDate to);
+
+
 }

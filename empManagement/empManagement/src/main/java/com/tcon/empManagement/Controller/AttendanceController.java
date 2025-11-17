@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -97,6 +98,17 @@ public class AttendanceController {
             return ResponseEntity.noContent().build();
         } catch (Exception ex) {
             log.error("DELETE /api/attendance/{} failed", id, ex);
+            throw ex;
+        }
+    }
+
+    @GetMapping("/date/{date}")
+    public List<AttendanceResponse> getAttendanceByDate(@PathVariable String date) {
+        log.info("GET /api/attendance/date/{}", date);
+        try {
+            return service.getAttendanceByDate(LocalDate.parse(date));
+        } catch (Exception ex) {
+            log.error("GET /api/attendance/date/{} failed", date, ex);
             throw ex;
         }
     }

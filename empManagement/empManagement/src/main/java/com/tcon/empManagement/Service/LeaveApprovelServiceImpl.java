@@ -1,9 +1,9 @@
 package com.tcon.empManagement.Service;
 
-
 import com.tcon.empManagement.Dto.LeaveApprovelCreateRequest;
 import com.tcon.empManagement.Dto.LeaveApprovelResponse;
 import com.tcon.empManagement.Dto.LeaveApprovelUpdateStatusRequest;
+import com.tcon.empManagement.Entity.Attendance;
 import com.tcon.empManagement.Entity.LeaveApprovel;
 import com.tcon.empManagement.Repository.LeaveApprovelRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -24,12 +25,11 @@ import java.util.NoSuchElementException;
 public class LeaveApprovelServiceImpl implements LeaveApprovelService {
 
     private final LeaveApprovelRepository repo;
+    private final AttendanceService attendanceService; // This should provide findByEmpIdAndDate and save
 
     @Override
     public LeaveApprovelResponse applyLeave(LeaveApprovelCreateRequest req) {
         log.info("Applying leave for empId={} typeOfLeave={}", req.getEmpId(), req.getTypeOfLeave());
-        // Status: default "PENDING"
-        // noOfDays: Inclusive of both days (to-from)+1
         double noOfDays = ChronoUnit.DAYS.between(req.getFromDate(), req.getToDate()) + 1;
         LeaveApprovel entity = LeaveApprovel.builder()
                 .empId(req.getEmpId())
@@ -53,10 +53,29 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
         LeaveApprovel leave = repo.findById(id).orElseThrow(
                 () -> new NoSuchElementException("LeaveApprovel not found: " + id)
         );
+
+        // On approval, update Attendance status for the leave dates
+        if ("APPROVED".equalsIgnoreCase(req.getStatus())) {
+            for (LocalDate date = leave.getFromDate(); !date.isAfter(leave.getToDate()); date = date.plusDays(1)) {
+                Optional<Attendance> optionalAttendance = attendanceService.findByEmpIdAndDate(leave.getEmpId(), date);
+                Attendance attendance = optionalAttendance.orElse(Attendance.builder()
+                        .empId(leave.getEmpId())
+                        .empName(leave.getEmpName())
+                        .date(date)
+                        .status("OnLeave")
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build());
+                attendance.setStatus("OnLeave");
+                attendance.setUpdatedAt(LocalDateTime.now());
+                attendanceService.save(attendance);
+            }
+        }
+
         leave.setStatus(req.getStatus());
         leave.setStatusUpdateDate(LocalDateTime.now());
-        LeaveApprovel saved = repo.save(leave);
-        return mapResponse(saved);
+        LeaveApprovel updated = repo.save(leave);
+        return mapResponse(updated);
     }
 
     @Override
@@ -72,7 +91,6 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
         return repo.findAll(pageable).map(this::mapResponse);
     }
 
-    // Find leaves by status (dashboard, HR)
     @Override
     public List<LeaveApprovelResponse> getByStatus(String status) {
         log.info("Fetching leaves with status={}", status);
@@ -80,7 +98,6 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
                 .stream().map(this::mapResponse).toList();
     }
 
-    // Get leaves for a date range (summary/statistics)
     @Override
     public List<LeaveApprovelResponse> getByDateRange(LocalDate from, LocalDate to) {
         log.info("Fetching leaves from {} to {}", from, to);
@@ -88,7 +105,6 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
                 .stream().map(this::mapResponse).toList();
     }
 
-    // Delete/cancel leave request
     @Override
     public boolean deleteLeave(String id) {
         log.info("Deleting leave id={}", id);
@@ -97,7 +113,6 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
         return true;
     }
 
-    // Get a single leave request by ID
     @Override
     public LeaveApprovelResponse getById(String id) {
         log.info("Fetching leave by id={}", id);
@@ -105,7 +120,6 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
                 .orElseThrow(() -> new NoSuchElementException("LeaveApprovel not found: " + id));
         return mapResponse(leave);
     }
-
 
     private LeaveApprovelResponse mapResponse(LeaveApprovel l) {
         return LeaveApprovelResponse.builder()

@@ -1,3 +1,4 @@
+/*
 package com.tcon.empManagement.Repository;
 
 import com.tcon.empManagement.Entity.EmployeeDocument;
@@ -25,3 +26,4 @@ public interface EmployeeDocumentRepository extends MongoRepository<EmployeeDocu
     // Count documents by employee
     long countByEmpId(String empId);
 }
+*/

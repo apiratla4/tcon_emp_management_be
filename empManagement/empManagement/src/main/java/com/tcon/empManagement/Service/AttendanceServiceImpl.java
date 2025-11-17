@@ -13,9 +13,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -90,6 +92,16 @@ public class AttendanceServiceImpl implements AttendanceService {
             throw ex;
         }
     }
+    @Override
+    public Optional<Attendance> findByEmpIdAndDate(String empId, LocalDate date) {
+        return repo.findByEmpIdAndDate(empId, date);
+    }
+
+    @Override
+    public Attendance save(Attendance attendance) {
+        return repo.save(attendance);
+    }
+
 
     @Override
     public Page<AttendanceResponse> getAllAttendance(Pageable pageable) {
@@ -127,6 +139,14 @@ public class AttendanceServiceImpl implements AttendanceService {
         log.info("Attendance deleted id={}", id);
     }
 
+    @Override
+    public List<AttendanceResponse> getAttendanceByDate(LocalDate date) {
+        log.info("Fetching attendance for date={}", date);
+        List<Attendance> records = repo.findByDateOrderByCheckInAsc(date);
+        return records.stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
     private AttendanceResponse mapToResponse(Attendance a) {
         return AttendanceResponse.builder()
                 .id(a.getId())

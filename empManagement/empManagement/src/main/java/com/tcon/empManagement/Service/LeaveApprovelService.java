@@ -4,11 +4,13 @@ package com.tcon.empManagement.Service;
 import com.tcon.empManagement.Dto.LeaveApprovelCreateRequest;
 import com.tcon.empManagement.Dto.LeaveApprovelResponse;
 import com.tcon.empManagement.Dto.LeaveApprovelUpdateStatusRequest;
+import com.tcon.empManagement.Entity.Attendance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface LeaveApprovelService {
     LeaveApprovelResponse applyLeave(LeaveApprovelCreateRequest req);
