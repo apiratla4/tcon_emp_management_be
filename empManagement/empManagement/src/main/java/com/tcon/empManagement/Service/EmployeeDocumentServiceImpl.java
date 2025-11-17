@@ -1,5 +1,5 @@
-/*
 package com.tcon.empManagement.Service;
+
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
@@ -39,8 +39,7 @@ public class EmployeeDocumentServiceImpl implements EmployeeDocumentService {
 
     @Override
     @Transactional
-    public EmployeeDocumentResponseDto uploadEmployeeDocument(MultipartFile file,
-                                                              EmployeeDocumentCreateDto createDto) {
+    public EmployeeDocumentResponseDto uploadEmployeeDocument(MultipartFile file, EmployeeDocumentCreateDto createDto) {
         String originalFilename = file.getOriginalFilename();
         String blobName = UUID.randomUUID() + "-" + originalFilename;
 
@@ -59,6 +58,7 @@ public class EmployeeDocumentServiceImpl implements EmployeeDocumentService {
             document.setFileName(originalFilename);
             document.setFileSize(file.getSize());
             document.setFileUrl(fileUrl);
+            document.setGcsKey(blobName); // Store real GCS key!
             document.setNote(createDto.getNote());
             document.setCreatedAt(LocalDateTime.now());
             document.setUpdatedAt(LocalDateTime.now());
@@ -90,8 +90,21 @@ public class EmployeeDocumentServiceImpl implements EmployeeDocumentService {
     }
 
     @Override
-    public String generateDownloadUrl(String fileName) {
-        BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, fileName).build();
+    public String generateDownloadUrlByDocumentId(String documentId) {
+        EmployeeDocument doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new RuntimeException("Document not found: " + documentId));
+        if (doc.getGcsKey() == null || doc.getGcsKey().trim().isEmpty()) {
+            throw new RuntimeException("Storage key (gcsKey) is missing for document: " + documentId);
+        }
+        return generateDownloadUrl(doc.getGcsKey());
+    }
+
+    @Override
+    public String generateDownloadUrl(String gcsKey) {
+        if (gcsKey == null || gcsKey.trim().isEmpty()) {
+            throw new IllegalArgumentException("GCS storage key must not be null/empty!");
+        }
+        BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, gcsKey).build();
         URL signedUrl = storage.signUrl(blobInfo, 1, TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature());
         return signedUrl.toString();
     }
@@ -104,6 +117,10 @@ public class EmployeeDocumentServiceImpl implements EmployeeDocumentService {
         doc.setUpdatedAt(LocalDateTime.now());
         doc.setUpdatedBy(updatedBy);
         documentRepository.delete(doc);
+
+        if (doc.getGcsKey() != null && !doc.getGcsKey().trim().isEmpty()) {
+            storage.delete(BlobId.of(bucketName, doc.getGcsKey()));
+        }
     }
 
     private EmployeeDocumentResponseDto convertToResponseDto(EmployeeDocument document) {
@@ -118,7 +135,7 @@ public class EmployeeDocumentServiceImpl implements EmployeeDocumentService {
         dto.setCreatedAt(document.getCreatedAt());
         dto.setUpdatedAt(document.getUpdatedAt());
         dto.setUpdatedBy(document.getUpdatedBy());
+        // Optionally add gcsKey if you want to show in frontend
         return dto;
     }
 }
-*/

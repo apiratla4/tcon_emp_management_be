@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -141,8 +142,12 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Override
     public List<AttendanceResponse> getAttendanceByDate(LocalDate date) {
-        log.info("Fetching attendance for date={}", date);
-        List<Attendance> records = repo.findByDateOrderByCheckInAsc(date);
+        // Build boundaries for Asia/Kolkata "date"
+        ZoneId zone = ZoneId.of("Asia/Kolkata");
+        LocalDateTime dayStart = date.atStartOfDay(zone).toLocalDateTime();
+        LocalDateTime dayEnd = date.plusDays(1).atStartOfDay(zone).toLocalDateTime().minusNanos(1);
+
+        List<Attendance> records = repo.findByCheckInBetweenOrderByCheckInAsc(dayStart, dayEnd);
         return records.stream()
                 .map(this::mapToResponse)
                 .toList();

@@ -45,5 +45,8 @@ public class EmployeeDocument {
     @Field("updated_by")
     private String updatedBy;
 
+    private String gcsKey; // Store the unique GCS blobName for this file
+
+
     // Employee ID who updated
 }

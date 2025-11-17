@@ -104,12 +104,15 @@ public class AttendanceController {
 
     @GetMapping("/date/{date}")
     public List<AttendanceResponse> getAttendanceByDate(@PathVariable String date) {
-        log.info("GET /api/attendance/date/{}", date);
+        log.info("API: GET /api/attendance/date/{} - Entered", date);
         try {
-            return service.getAttendanceByDate(LocalDate.parse(date));
+            List<AttendanceResponse> responses = service.getAttendanceByDate(LocalDate.parse(date));
+            log.info("API: GET /api/attendance/date/{} - Success, found {} records", date, responses.size());
+            return responses;
         } catch (Exception ex) {
-            log.error("GET /api/attendance/date/{} failed", date, ex);
-            throw ex;
+            log.error("API: GET /api/attendance/date/{} - Failed: {}", date, ex.getMessage(), ex);
+            throw ex; // Or handle with custom response if you want HTTP error mapping
         }
     }
+
 }

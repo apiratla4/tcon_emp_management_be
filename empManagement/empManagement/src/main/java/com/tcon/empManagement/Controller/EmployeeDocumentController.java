@@ -1,4 +1,3 @@
-/*
 package com.tcon.empManagement.Controller;
 
 import com.tcon.empManagement.Dto.EmployeeDocumentCreateDto;
@@ -44,11 +43,12 @@ public class EmployeeDocumentController {
         return ResponseEntity.ok(documents);
     }
 
-    @GetMapping("/download-url/{fileName}")
-    public ResponseEntity<String> getDownloadUrl(@PathVariable String fileName) {
-        String url = employeeDocumentService.generateDownloadUrl(fileName);
+    @GetMapping("/download-url/{documentId}")
+    public ResponseEntity<String> getDownloadUrl(@PathVariable String documentId) {
+        String url = employeeDocumentService.generateDownloadUrlByDocumentId(documentId);
         return ResponseEntity.ok(url);
     }
+
 
     @DeleteMapping("/{documentId}")
     public ResponseEntity<Void> deleteDocument(
@@ -58,4 +58,3 @@ public class EmployeeDocumentController {
         return ResponseEntity.noContent().build();
     }
 }
-*/

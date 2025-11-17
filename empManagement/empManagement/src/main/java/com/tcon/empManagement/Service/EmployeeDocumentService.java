@@ -1,4 +1,3 @@
-/*
 package com.tcon.empManagement.Service;
 
 import com.tcon.empManagement.Dto.EmployeeDocumentCreateDto;
@@ -19,5 +18,6 @@ public interface EmployeeDocumentService {
     String generateDownloadUrl(String fileName);
 
     void deleteDocument(String documentId, String updatedBy);
+    String generateDownloadUrlByDocumentId(String documentId);
+
 }
-*/
