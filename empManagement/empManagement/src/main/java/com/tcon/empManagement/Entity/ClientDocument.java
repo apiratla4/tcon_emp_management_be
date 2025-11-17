@@ -50,4 +50,7 @@ public class ClientDocument {
 
     @Field("updated_by")
     private String updatedBy;
+
+    @Field("gcs_key")
+    private String gcsKey; // Unique GCS blob name for this file (required for download/delete)
 }

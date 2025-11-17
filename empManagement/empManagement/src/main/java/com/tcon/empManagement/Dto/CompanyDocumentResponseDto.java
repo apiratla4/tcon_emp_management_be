@@ -27,4 +27,6 @@ public class CompanyDocumentResponseDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String updatedBy;
+    private String gcsKey;
+    private String fileSizeDisplay; // e.g., "2.3 MB" or "654 KB"
 }

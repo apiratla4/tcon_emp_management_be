@@ -3,6 +3,7 @@ package com.tcon.empManagement.Dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 
@@ -22,5 +23,7 @@ public class CompanyDocumentRequestDto {
     private String fileType;
     private String fileUrl;
     private String note;
-    private String updatedBy; // employeeId
+    private String updatedBy;
+    private MultipartFile file;// employeeId
+    private String gcsKey;
 }

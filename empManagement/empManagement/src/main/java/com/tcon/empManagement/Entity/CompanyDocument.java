@@ -1,4 +1,5 @@
 package com.tcon.empManagement.Entity;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -58,4 +59,7 @@ public class CompanyDocument {
 
     @Field("updated_by")
     private String updatedBy; // employeeId
+
+    @Field("gcs_key")
+    private String gcsKey; // Unique GCS blob name for this file
 }

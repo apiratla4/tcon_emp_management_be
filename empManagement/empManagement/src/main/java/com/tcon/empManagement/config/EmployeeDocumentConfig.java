@@ -27,12 +27,14 @@ public class EmployeeDocumentConfig {
     public Storage serviceAccountStorage(Storage defaultStorage) throws IOException {
         Blob blob = defaultStorage.get(BlobId.of(bucketName, serviceAccountFileName));
         byte[] content = blob.getContent();
-        InputStream credentialsStream = new ByteArrayInputStream(content);
-        return StorageOptions.newBuilder()
-                .setCredentials(ServiceAccountCredentials.fromStream(credentialsStream))
-                .build()
-                .getService();
+        try (InputStream credentialsStream = new ByteArrayInputStream(content)) {
+            return StorageOptions.newBuilder()
+                    .setCredentials(ServiceAccountCredentials.fromStream(credentialsStream))
+                    .build()
+                    .getService();
+        }
     }
+
 
     @Bean
     @Primary
