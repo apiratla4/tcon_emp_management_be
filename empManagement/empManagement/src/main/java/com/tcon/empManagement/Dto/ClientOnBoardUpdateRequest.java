@@ -26,7 +26,7 @@ public class ClientOnBoardUpdateRequest {
     private List<ClientOnBoardCreateRequest.FileUploadDto> fileUploads;
 
     private String description;
-
+    private String status;
     private String note;
 
     private ClientOnBoardCreateRequest.ContactInfoDto contactInfo;

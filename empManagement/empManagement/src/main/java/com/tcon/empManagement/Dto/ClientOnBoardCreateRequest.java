@@ -33,7 +33,7 @@ public class ClientOnBoardCreateRequest {
     private String description;
 
     private String note;
-
+    private String status;
     @NotNull(message = "Contact info is required")
     private ContactInfoDto contactInfo;
 

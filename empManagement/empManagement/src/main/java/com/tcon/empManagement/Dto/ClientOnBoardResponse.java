@@ -29,7 +29,7 @@ public class ClientOnBoardResponse {
     private List<FileUploadResponseDto> fileUploads;
 
     private String description;
-
+    private String status;
     private String note;
 
     private ClientOnBoardCreateRequest.ContactInfoDto contactInfo;

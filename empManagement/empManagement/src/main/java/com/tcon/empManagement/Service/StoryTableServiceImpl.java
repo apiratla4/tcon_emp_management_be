@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,6 +31,12 @@ public class StoryTableServiceImpl implements StoryTableService {
         storyTable.setStatus(request.getStatus() != null ? request.getStatus() : "PENDING");
         storyTable.setCreatedAt(LocalDateTime.now());
         storyTable.setUpdatedAt(LocalDateTime.now());
+        storyTable.setSprintNumber(request.getSprintNumber());
+        storyTable.setPreviousSprints(new ArrayList<>());
+        storyTable.setSpillover(false);
+        storyTable.setSpilloverFromSprint(null);
+        storyTable.setEmpId(request.getEmpId());
+        storyTable.setDueDate(request.getDueDate());
 
         StoryTable saved = storyTableRepository.save(storyTable);
         return convertToResponse(saved);
@@ -39,6 +46,25 @@ public class StoryTableServiceImpl implements StoryTableService {
     public StoryTableResponse updateStoryTable(String id, StoryTableUpdateRequest request) {
         StoryTable storyTable = storyTableRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("StoryTable not found with id: " + id));
+
+        if (request.getSprintNumber() != null)
+            storyTable.setSprintNumber(request.getSprintNumber());
+
+        if (request.getPreviousSprints() != null)
+            storyTable.setPreviousSprints(request.getPreviousSprints());
+
+        if (request.getSpillover() != null)
+            storyTable.setSpillover(request.getSpillover());
+
+        if (request.getSpilloverFromSprint() != null)
+            storyTable.setSpilloverFromSprint(request.getSpilloverFromSprint());
+
+        if (request.getEmpId() != null)
+            storyTable.setEmpId(request.getEmpId());
+
+        if (request.getDueDate() != null)
+            storyTable.setDueDate(request.getDueDate());
+
 
         if (request.getTaskName() != null) {
             storyTable.setTaskName(request.getTaskName());
@@ -159,6 +185,12 @@ public class StoryTableServiceImpl implements StoryTableService {
         response.setStatus(storyTable.getStatus());
         response.setCreatedAt(storyTable.getCreatedAt());
         response.setUpdatedAt(storyTable.getUpdatedAt());
+        response.setSprintNumber(storyTable.getSprintNumber());
+        response.setPreviousSprints(storyTable.getPreviousSprints());
+        response.setSpillover(storyTable.getSpillover());
+        response.setSpilloverFromSprint(storyTable.getSpilloverFromSprint());
+        response.setEmpId(storyTable.getEmpId());
+        response.setDueDate(storyTable.getDueDate());
 
         return response;
     }

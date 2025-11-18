@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 
 
 @Data
@@ -29,4 +30,8 @@ public class StoryTableCreateRequest {
     private String priority;
 
     private String status = "PENDING";
+    private Integer sprintNumber;
+    private String empId;
+    private LocalDateTime dueDate;
+
 }

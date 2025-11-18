@@ -30,6 +30,8 @@ public class ClientOnBoard {
 
     private UiUx uiux;
 
+    private String status;
+
     private List<FileUpload> fileUploads;
 
     private String description;

@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -34,4 +35,12 @@ public class StoryTableResponse {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    private Integer sprintNumber;
+    private List<Integer> previousSprints;
+    private Boolean spillover;
+    private Integer spilloverFromSprint;
+    private String empId;
+    private LocalDateTime dueDate;
+
 }

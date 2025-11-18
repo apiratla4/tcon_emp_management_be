@@ -32,6 +32,7 @@ public class ClientOnBoardServiceImpl implements ClientOnBoardService {
                 .updatedAt(LocalDateTime.now())
                 .description(request.getDescription())
                 .note(request.getNote())
+                .status(request.getStatus())
                 .build();
 
         ClientOnBoard saved = clientOnBoardRepository.save(clientOnBoard);
@@ -42,6 +43,10 @@ public class ClientOnBoardServiceImpl implements ClientOnBoardService {
     public ClientOnBoardResponse updateClientOnBoard(String id, ClientOnBoardUpdateRequest request) {
         ClientOnBoard clientOnBoard = clientOnBoardRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("ClientOnBoard not found with id: " + id));
+
+        if (request.getStatus() != null) {
+            clientOnBoard.setStatus(request.getStatus());
+        }
 
         if (request.getProjectId() != null) {
             clientOnBoard.setProjectId(request.getProjectId());
@@ -204,6 +209,7 @@ public class ClientOnBoardServiceImpl implements ClientOnBoardService {
                 .contactInfo(convertContactInfoToDto(entity.getContactInfo()))
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
+                .status(entity.getStatus())
                 .build();
     }
 

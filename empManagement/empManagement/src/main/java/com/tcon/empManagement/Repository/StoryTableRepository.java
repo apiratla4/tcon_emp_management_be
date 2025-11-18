@@ -22,4 +22,10 @@ public interface StoryTableRepository extends MongoRepository<StoryTable, String
     List<StoryTable> findByTaskName(String taskName);
 
     List<StoryTable> findByType(String type);
+    // ...
+    List<StoryTable> findBySprintNumber(Integer sprintNumber);
+    List<StoryTable> findBySpilloverFromSprint(Integer spilloverFromSprint);
+    List<StoryTable> findByEmpId(String empId);
+    List<StoryTable> findByProjectAndSprintNumber(String project, Integer sprintNumber);
+
 }
