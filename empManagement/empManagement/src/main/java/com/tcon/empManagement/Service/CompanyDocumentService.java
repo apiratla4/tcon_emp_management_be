@@ -1,3 +1,4 @@
+/*
 package com.tcon.empManagement.Service;
 
 import com.tcon.empManagement.Dto.CompanyDocumentRequestDto;
@@ -24,3 +25,4 @@ public interface CompanyDocumentService {
 
     void deleteDocumentById(String id);
 }
+*/

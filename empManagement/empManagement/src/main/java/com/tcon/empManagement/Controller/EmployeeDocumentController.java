@@ -1,3 +1,4 @@
+/*
 package com.tcon.empManagement.Controller;
 
 import com.tcon.empManagement.Dto.EmployeeDocumentCreateDto;
@@ -58,3 +59,4 @@ public class EmployeeDocumentController {
         return ResponseEntity.noContent().build();
     }
 }
+*/
