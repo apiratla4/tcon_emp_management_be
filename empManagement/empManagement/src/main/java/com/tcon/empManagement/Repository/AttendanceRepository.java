@@ -17,6 +17,8 @@ public interface AttendanceRepository extends MongoRepository<Attendance, String
     List<Attendance> findByStatus(String status);
 
     List<Attendance> findByCheckInBetweenOrderByCheckInAsc(LocalDateTime start, LocalDateTime end);
+    List<Attendance> findByEmpIdAndDateBetween(String empId, LocalDate start, LocalDate end);
+
 
 }
 

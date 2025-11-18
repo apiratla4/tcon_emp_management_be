@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -152,6 +153,45 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .map(this::mapToResponse)
                 .toList();
     }
+
+    @Override
+    public List<AttendanceResponse> getWeeklyTimesheet(String empId, LocalDate weekStart) {
+        List<Attendance> records = repo.findByEmpIdAndDateBetween(empId, weekStart, weekStart.plusDays(6));
+        Map<LocalDate, Attendance> map = records.stream()
+                .collect(java.util.stream.Collectors.toMap(Attendance::getDate, r -> r));
+
+        List<AttendanceResponse> result = new java.util.ArrayList<>(7);
+        for (int i = 0; i < 7; i++) {
+            LocalDate cur = weekStart.plusDays(i);
+            Attendance att = map.get(cur);
+
+            String status;
+            if (att != null) {
+                status = att.getStatus();
+            } else if (cur.getDayOfWeek() == java.time.DayOfWeek.SATURDAY || cur.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
+                status = "Weekoff";
+            } else {
+                status = "Absent";
+            }
+
+            result.add(AttendanceResponse.builder()
+                    .id(att != null ? att.getId() : null)
+                    .empId(empId)
+                    .empName(att != null ? att.getEmpName() : null)
+                    .date(cur)
+                    .checkIn(att != null ? att.getCheckIn() : null)
+                    .checkOut(att != null ? att.getCheckOut() : null)
+                    .workMode(att != null ? att.getWorkMode() : null)
+                    .status(status)
+                    .workHours(att != null ? att.getWorkHours() : 0.0)
+                    .empRole(att != null ? att.getEmpRole() : null)
+                    .createdAt(att != null ? att.getCreatedAt() : null)
+                    .updatedAt(att != null ? att.getUpdatedAt() : null)
+                    .build());
+        }
+        return result;
+    }
+
     private AttendanceResponse mapToResponse(Attendance a) {
         return AttendanceResponse.builder()
                 .id(a.getId())

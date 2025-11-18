@@ -114,5 +114,13 @@ public class AttendanceController {
             throw ex; // Or handle with custom response if you want HTTP error mapping
         }
     }
+    @GetMapping("/employee/{empId}/week")
+    public List<AttendanceResponse> getWeeklyTimesheet(
+            @PathVariable String empId,
+            @RequestParam String weekStart // e.g. "2025-11-10"
+    ) {
+        LocalDate monday = LocalDate.parse(weekStart);
+        return service.getWeeklyTimesheet(empId, monday);
+    }
 
 }

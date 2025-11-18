@@ -37,4 +37,6 @@ public interface AttendanceService {
 
     List<AttendanceResponse> getAttendanceByDate(LocalDate date);
 
+    List<AttendanceResponse> getWeeklyTimesheet(String empId, LocalDate weekStart);
+
 }

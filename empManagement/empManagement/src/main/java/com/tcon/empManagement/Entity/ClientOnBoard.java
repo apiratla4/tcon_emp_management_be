@@ -33,13 +33,9 @@ public class ClientOnBoard {
     private List<FileUpload> fileUploads;
 
     private String description;
-
     private String note;
-
     private ContactInfo contactInfo;
-
     private LocalDateTime createdAt;
-
     private LocalDateTime updatedAt;
 
     // Nested Classes
