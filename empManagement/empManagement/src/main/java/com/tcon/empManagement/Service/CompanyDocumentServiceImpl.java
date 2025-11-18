@@ -1,4 +1,3 @@
-/*
 package com.tcon.empManagement.Service;
 
 import com.google.cloud.storage.BlobId;
@@ -240,4 +239,3 @@ public class CompanyDocumentServiceImpl implements CompanyDocumentService {
         return String.format("%.2f %s", size, units[unitIndex]);
     }
 }
-*/

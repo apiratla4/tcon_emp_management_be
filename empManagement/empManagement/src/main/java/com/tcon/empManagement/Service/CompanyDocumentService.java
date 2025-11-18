@@ -1,4 +1,3 @@
-/*
 package com.tcon.empManagement.Service;
 
 import com.tcon.empManagement.Dto.CompanyDocumentRequestDto;
@@ -7,7 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-public interface CompanyDocumentService {
+public interface /**/CompanyDocumentService {
 
     CompanyDocumentResponseDto createDocument(CompanyDocumentRequestDto requestDto);
 
@@ -25,4 +24,3 @@ public interface CompanyDocumentService {
 
     void deleteDocumentById(String id);
 }
-*/
