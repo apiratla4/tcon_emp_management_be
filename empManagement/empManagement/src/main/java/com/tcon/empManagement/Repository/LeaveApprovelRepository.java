@@ -15,5 +15,6 @@ public interface LeaveApprovelRepository extends MongoRepository<LeaveApprovel, 
             LocalDate from, LocalDate to);
 
     List<LeaveApprovel> findByEmpRoleOrderByCreateDateDesc(String empRole);
+    List<LeaveApprovel> findByEmpRoleIgnoreCaseOrderByCreateDateDesc(String empRole);
 
 }

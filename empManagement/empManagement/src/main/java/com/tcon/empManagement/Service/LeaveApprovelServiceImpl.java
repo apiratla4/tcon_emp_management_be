@@ -134,12 +134,19 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
         switch (normalized) {
             case "CEO":
             case "HR":
-                // These roles see all leaves
-                return repo.findAll().stream().map(this::mapResponse).toList();
+                // CEO and HR see all leave requests
+                return repo.findAll()
+                        .stream()
+                        .map(this::mapResponse)
+                        .toList();
+
             case "MANAGER":
-                // Manager sees leaves for EMPLOYEE role
-                return repo.findByEmpRoleOrderByCreateDateDesc("EMPLOYEE")
-                        .stream().map(this::mapResponse).toList();
+                // Managers see leaves from employees (case-insensitive)
+                return repo.findByEmpRoleIgnoreCaseOrderByCreateDateDesc("EMPLOYEE")
+                        .stream()
+                        .map(this::mapResponse)
+                        .toList();
+
             default:
                 return List.of();
         }
