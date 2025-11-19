@@ -20,9 +20,7 @@ public class Sprint {
     private String project;        // project.clientInfo.projectName
     private Integer sprintNumber;  // 1..52
     private Integer year;          // 2025
-
     private LocalDate startDate;
     private LocalDate endDate;
-
     private Boolean active; // only 1 sprint per project is active
 }
