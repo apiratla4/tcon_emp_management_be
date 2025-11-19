@@ -22,4 +22,8 @@ public interface SprintService {
     Map<String, Integer> getCurrentSprintNumbersPerProject();
 
     Integer getGlobalCurrentSprint();
+
+    // NEW
+    void deleteSprintById(String id);
+    boolean existsById(String id);
 }

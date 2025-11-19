@@ -124,4 +124,18 @@ public class SprintServiceImpl implements SprintService {
                 .orElse(null);
         return (s != null) ? s.getSprintNumber() : 1;
     }
+
+    @Override
+    public void deleteSprintById(String id) {
+        if (id == null) throw new IllegalArgumentException("id cannot be null");
+        if (!sprintRepository.existsById(id)) {
+            throw new NoSuchElementException("Sprint not found with id: " + id);
+        }
+        sprintRepository.deleteById(id);
+    }
+
+    @Override
+    public boolean existsById(String id) {
+        return id != null && sprintRepository.existsById(id);
+    }
 }

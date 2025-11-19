@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @RestController
@@ -113,23 +114,20 @@ public class SprintController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSprint(@PathVariable String id) {
-
-        // If you don't have delete in SprintService add a small implementation that calls sprintRepository.deleteById(id).
         try {
-
-            List<Sprint> all = sprintService.getSprintsForProject(null);
-            Sprint found = null;
-            if (all != null) {
-                found = all.stream().filter(s -> id.equals(s.getId())).findFirst().orElse(null);
-            }
-            if (found == null) {
-                // fallback: remove via service if you implement delete there (recommended)
+            if (!sprintService.existsById(id)) {
                 return ResponseEntity.notFound().build();
             }
 
+            sprintService.deleteSprintById(id);
             return ResponseEntity.noContent().build();
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.notFound().build();
+
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
 }
