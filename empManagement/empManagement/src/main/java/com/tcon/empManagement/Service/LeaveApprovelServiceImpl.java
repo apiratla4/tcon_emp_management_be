@@ -123,20 +123,26 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
         return mapResponse(leave);
     }
 
-    // Role-based leave view
     @Override
     public List<LeaveApprovelResponse> getLeavesForRole(String role) {
         log.info("Fetching leaves visible for role={}", role);
-        String normalized = role == null ? "" : role.toUpperCase(Locale.ROOT);
 
-        if ("CEO".equals(normalized) || "HR".equals(normalized)) {
-            return repo.findAll().stream().map(this::mapResponse).toList();
+        if (role == null) return List.of();
+
+        String normalized = role.trim().toUpperCase(Locale.ROOT);
+
+        switch (normalized) {
+            case "CEO":
+            case "HR":
+                // These roles see all leaves
+                return repo.findAll().stream().map(this::mapResponse).toList();
+            case "MANAGER":
+                // Manager sees leaves for EMPLOYEE role
+                return repo.findByEmpRoleOrderByCreateDateDesc("EMPLOYEE")
+                        .stream().map(this::mapResponse).toList();
+            default:
+                return List.of();
         }
-        if ("MANAGER".equals(normalized)) {
-            return repo.findByEmpRoleOrderByCreateDateDesc("EMPLOYEE")
-                    .stream().map(this::mapResponse).toList();
-        }
-        return List.of();
     }
 
     private LeaveApprovelResponse mapResponse(LeaveApprovel l) {
