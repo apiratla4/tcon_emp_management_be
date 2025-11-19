@@ -130,4 +130,16 @@ public class SprintController {
         }
     }
 
+    @GetMapping("/{project}/{sprintNumber}")
+    public ResponseEntity<SprintResponse> getSprintByProjectAndNumber(
+            @PathVariable String project,
+            @PathVariable Integer sprintNumber) {
+
+        Sprint sprint = sprintService.getSprintByProjectAndNumber(project, sprintNumber);
+        if (sprint == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(SprintMapper.toResponse(sprint));
+    }
 }

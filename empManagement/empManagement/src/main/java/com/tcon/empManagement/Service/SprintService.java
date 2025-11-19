@@ -23,6 +23,8 @@ public interface SprintService {
 
     Integer getGlobalCurrentSprint();
 
+    Sprint getSprintByProjectAndNumber(String project, Integer sprintNumber);
+
     // NEW
     void deleteSprintById(String id);
     boolean existsById(String id);

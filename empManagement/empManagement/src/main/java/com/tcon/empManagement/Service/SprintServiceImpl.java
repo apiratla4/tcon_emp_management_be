@@ -138,4 +138,12 @@ public class SprintServiceImpl implements SprintService {
     public boolean existsById(String id) {
         return id != null && sprintRepository.existsById(id);
     }
+
+    @Override
+    public Sprint getSprintByProjectAndNumber(String project, Integer sprintNumber) {
+        if (project == null || sprintNumber == null) return null;
+        return sprintRepository.findByProjectAndSprintNumber(project, sprintNumber);
+    }
+
+
 }
