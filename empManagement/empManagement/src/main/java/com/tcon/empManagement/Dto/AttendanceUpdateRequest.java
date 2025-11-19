@@ -1,12 +1,10 @@
 package com.tcon.empManagement.Dto;
-
 import lombok.*;
-
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class AttendanceUpdateRequest {
-
-    private LocalDateTime checkOut;
-    private String status;              // Can update status on check-out if needed
+    private OffsetDateTime checkOut;
+    private String status;
 }
+

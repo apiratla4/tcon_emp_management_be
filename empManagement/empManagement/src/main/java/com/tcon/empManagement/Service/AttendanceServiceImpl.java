@@ -12,14 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.time.*;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -27,18 +21,19 @@ import java.util.Optional;
 public class AttendanceServiceImpl implements AttendanceService {
 
     private final AttendanceRepository repo;
+    private final static ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Kolkata");
 
     @Override
     public AttendanceResponse checkIn(AttendanceCreateRequest req) {
         log.info("Check-in for empId={} date={}", req.getEmpId(), req.getDate());
         try {
-            LocalDateTime now = LocalDateTime.now();
+            Instant now = Instant.now();
 
             Attendance attendance = Attendance.builder()
                     .empId(req.getEmpId())
                     .empName(req.getEmpName())
                     .date(req.getDate())
-                    .checkIn(req.getCheckIn())
+                    .checkIn(req.getCheckIn().toInstant())
                     .workMode(req.getWorkMode())
                     .status(req.getStatus())
                     .empRole(req.getEmpRole())
@@ -69,31 +64,28 @@ public class AttendanceServiceImpl implements AttendanceService {
             });
 
             if (req.getCheckOut() != null) {
-                attendance.setCheckOut(req.getCheckOut());
+                attendance.setCheckOut(req.getCheckOut().toInstant());
 
-                // Calculate work hours
                 if (attendance.getCheckIn() != null && attendance.getCheckOut() != null) {
                     Duration duration = Duration.between(attendance.getCheckIn(), attendance.getCheckOut());
                     double hours = duration.toMinutes() / 60.0;
-                    attendance.setWorkHours(Math.round(hours * 100.0) / 100.0); // Round to 2 decimals
+                    attendance.setWorkHours(Math.round(hours * 100.0) / 100.0);
                     log.info("Work hours calculated: {} for id={}", attendance.getWorkHours(), id);
                 }
             }
-
             if (req.getStatus() != null) {
                 attendance.setStatus(req.getStatus());
             }
-
-            attendance.setUpdatedAt(LocalDateTime.now());
+            attendance.setUpdatedAt(Instant.now());
             Attendance saved = repo.save(attendance);
             log.info("Check-out successful id={}", saved.getId());
             return mapToResponse(saved);
-
         } catch (Exception ex) {
             log.error("Check-out failed id={}", id, ex);
             throw ex;
         }
     }
+
     @Override
     public Optional<Attendance> findByEmpIdAndDate(String empId, LocalDate date) {
         return repo.findByEmpIdAndDate(empId, date);
@@ -103,7 +95,6 @@ public class AttendanceServiceImpl implements AttendanceService {
     public Attendance save(Attendance attendance) {
         return repo.save(attendance);
     }
-
 
     @Override
     public Page<AttendanceResponse> getAllAttendance(Pageable pageable) {
@@ -143,24 +134,21 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Override
     public List<AttendanceResponse> getAttendanceByDate(LocalDate date) {
-        // Build boundaries for Asia/Kolkata "date"
-        ZoneId zone = ZoneId.of("Asia/Kolkata");
-        LocalDateTime dayStart = date.atStartOfDay(zone).toLocalDateTime();
-        LocalDateTime dayEnd = date.plusDays(1).atStartOfDay(zone).toLocalDateTime().minusNanos(1);
-
-        List<Attendance> records = repo.findByCheckInBetweenOrderByCheckInAsc(dayStart, dayEnd);
-        return records.stream()
-                .map(this::mapToResponse)
-                .toList();
+        // For the whole day's range in IST:
+        OffsetDateTime dayStart = date.atStartOfDay(DEFAULT_ZONE).toOffsetDateTime();
+        OffsetDateTime dayEnd = date.plusDays(1).atStartOfDay(DEFAULT_ZONE).toOffsetDateTime().minusNanos(1);
+        Instant utcStart = dayStart.toInstant();
+        Instant utcEnd = dayEnd.toInstant();
+        List<Attendance> records = repo.findByCheckInBetweenOrderByCheckInAsc(utcStart, utcEnd);
+        return records.stream().map(this::mapToResponse).toList();
     }
+
 
     @Override
     public List<AttendanceResponse> getWeeklyTimesheet(String empId, LocalDate weekStart) {
         List<Attendance> records = repo.findByEmpIdAndDateBetween(empId, weekStart, weekStart.plusDays(6));
-        Map<LocalDate, Attendance> map = records.stream()
-                .collect(java.util.stream.Collectors.toMap(Attendance::getDate, r -> r));
-
-        List<AttendanceResponse> result = new java.util.ArrayList<>(7);
+        Map<LocalDate, Attendance> map = records.stream().collect(java.util.stream.Collectors.toMap(Attendance::getDate, r -> r));
+        List<AttendanceResponse> result = new ArrayList<>(7);
         for (int i = 0; i < 7; i++) {
             LocalDate cur = weekStart.plusDays(i);
             Attendance att = map.get(cur);
@@ -168,7 +156,7 @@ public class AttendanceServiceImpl implements AttendanceService {
             String status;
             if (att != null) {
                 status = att.getStatus();
-            } else if (cur.getDayOfWeek() == java.time.DayOfWeek.SATURDAY || cur.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
+            } else if (cur.getDayOfWeek() == DayOfWeek.SATURDAY || cur.getDayOfWeek() == DayOfWeek.SUNDAY) {
                 status = "Weekoff";
             } else {
                 status = "Absent";
@@ -179,14 +167,14 @@ public class AttendanceServiceImpl implements AttendanceService {
                     .empId(empId)
                     .empName(att != null ? att.getEmpName() : null)
                     .date(cur)
-                    .checkIn(att != null ? att.getCheckIn() : null)
-                    .checkOut(att != null ? att.getCheckOut() : null)
+                    .checkIn(att != null ? toOffsetDateTime(att.getCheckIn()) : null)
+                    .checkOut(att != null ? toOffsetDateTime(att.getCheckOut()) : null)
                     .workMode(att != null ? att.getWorkMode() : null)
                     .status(status)
                     .workHours(att != null ? att.getWorkHours() : 0.0)
                     .empRole(att != null ? att.getEmpRole() : null)
-                    .createdAt(att != null ? att.getCreatedAt() : null)
-                    .updatedAt(att != null ? att.getUpdatedAt() : null)
+                    .createdAt(att != null ? toOffsetDateTime(att.getCreatedAt()) : null)
+                    .updatedAt(att != null ? toOffsetDateTime(att.getUpdatedAt()) : null)
                     .build());
         }
         return result;
@@ -198,14 +186,18 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .empId(a.getEmpId())
                 .empName(a.getEmpName())
                 .date(a.getDate())
-                .checkIn(a.getCheckIn())
-                .checkOut(a.getCheckOut())
+                .checkIn(toOffsetDateTime(a.getCheckIn()))
+                .checkOut(toOffsetDateTime(a.getCheckOut()))
                 .workMode(a.getWorkMode())
                 .status(a.getStatus())
                 .workHours(a.getWorkHours())
                 .empRole(a.getEmpRole())
-                .createdAt(a.getCreatedAt())
-                .updatedAt(a.getUpdatedAt())
+                .createdAt(toOffsetDateTime(a.getCreatedAt()))
+                .updatedAt(toOffsetDateTime(a.getUpdatedAt()))
                 .build();
+    }
+
+    private OffsetDateTime toOffsetDateTime(Instant instant) {
+        return instant == null ? null : instant.atZone(DEFAULT_ZONE).toOffsetDateTime();
     }
 }

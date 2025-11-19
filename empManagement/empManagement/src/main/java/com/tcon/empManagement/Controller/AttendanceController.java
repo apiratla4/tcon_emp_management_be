@@ -1,6 +1,5 @@
 package com.tcon.empManagement.Controller;
 
-
 import com.tcon.empManagement.Dto.AttendanceCreateRequest;
 import com.tcon.empManagement.Dto.AttendanceResponse;
 import com.tcon.empManagement.Dto.AttendanceUpdateRequest;
@@ -25,7 +24,7 @@ public class AttendanceController {
 
     private final AttendanceService service;
 
-    // Get all attendance (Manager, HR, Owner) - paginated
+    // 1. Get all attendance records (paginated)
     @GetMapping
     public Page<AttendanceResponse> getAllAttendance(
             @RequestParam(defaultValue = "0") int page,
@@ -39,7 +38,7 @@ public class AttendanceController {
         }
     }
 
-    // Get attendance by employeeId (Employee can view own records)
+    // 2. Get attendance for a specific employee
     @GetMapping("/employee/{empId}")
     public List<AttendanceResponse> getAttendanceByEmployee(@PathVariable String empId) {
         log.info("GET /api/attendance/employee/{}", empId);
@@ -51,7 +50,7 @@ public class AttendanceController {
         }
     }
 
-    // Check-in (All employees)
+    // 3. Check-in endpoint
     @PostMapping("/checkin")
     public ResponseEntity<AttendanceResponse> checkIn(@Valid @RequestBody AttendanceCreateRequest req) {
         log.info("POST /api/attendance/checkin empId={} date={}", req.getEmpId(), req.getDate());
@@ -64,7 +63,7 @@ public class AttendanceController {
         }
     }
 
-    // Check-out (All employees)
+    // 4. Check-out endpoint
     @PatchMapping("/checkout/{id}")
     public AttendanceResponse checkOut(@PathVariable String id,
                                        @Valid @RequestBody AttendanceUpdateRequest req) {
@@ -77,7 +76,7 @@ public class AttendanceController {
         }
     }
 
-    // Optional: Get by id
+    // 5. Get by attendance record id
     @GetMapping("/{id}")
     public AttendanceResponse getById(@PathVariable String id) {
         log.info("GET /api/attendance/{}", id);
@@ -89,7 +88,7 @@ public class AttendanceController {
         }
     }
 
-    // Optional: Delete by id (admin only)
+    // 6. Delete by id (admin only)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteById(@PathVariable String id) {
         log.info("DELETE /api/attendance/{}", id);
@@ -102,6 +101,7 @@ public class AttendanceController {
         }
     }
 
+    // 7. Get by date (IST/UTC boundary safe)
     @GetMapping("/date/{date}")
     public List<AttendanceResponse> getAttendanceByDate(@PathVariable String date) {
         log.info("API: GET /api/attendance/date/{} - Entered", date);
@@ -111,16 +111,25 @@ public class AttendanceController {
             return responses;
         } catch (Exception ex) {
             log.error("API: GET /api/attendance/date/{} - Failed: {}", date, ex.getMessage(), ex);
-            throw ex; // Or handle with custom response if you want HTTP error mapping
+            throw ex;
         }
     }
+
+    // 8. Get weekly timesheet view for employee (current week etc.)
     @GetMapping("/employee/{empId}/week")
     public List<AttendanceResponse> getWeeklyTimesheet(
             @PathVariable String empId,
             @RequestParam String weekStart // e.g. "2025-11-10"
     ) {
-        LocalDate monday = LocalDate.parse(weekStart);
-        return service.getWeeklyTimesheet(empId, monday);
+        log.info("API: GET /api/attendance/employee/{}/week?weekStart={}", empId, weekStart);
+        try {
+            LocalDate monday = LocalDate.parse(weekStart);
+            List<AttendanceResponse> result = service.getWeeklyTimesheet(empId, monday);
+            log.info("API: /employee/{}/week => {} days", empId, result.size());
+            return result;
+        } catch (Exception ex) {
+            log.error("API: GET /api/attendance/employee/{}/week failed, weekStart={}", empId, weekStart, ex);
+            throw ex;
+        }
     }
-
 }

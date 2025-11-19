@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
@@ -65,11 +66,11 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
                         .empName(leave.getEmpName())
                         .date(date)
                         .status("OnLeave")
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
+                        .createdAt(OffsetDateTime.now().toInstant())
+                        .updatedAt(OffsetDateTime.now().toInstant())
                         .build());
                 attendance.setStatus("OnLeave");
-                attendance.setUpdatedAt(LocalDateTime.now());
+                attendance.setUpdatedAt(OffsetDateTime.now().toInstant());
                 attendanceService.save(attendance);
             }
         }
