@@ -37,7 +37,7 @@ public class StoryTableServiceImpl implements StoryTableService {
         storyTable.setSpilloverFromSprint(null);
         storyTable.setEmpId(request.getEmpId());
         storyTable.setDueDate(request.getDueDate());
-
+        storyTable.setAcceptanceCriteria(request.getAcceptanceCriteria());
         StoryTable saved = storyTableRepository.save(storyTable);
         return convertToResponse(saved);
     }
@@ -94,6 +94,9 @@ public class StoryTableServiceImpl implements StoryTableService {
             storyTable.setStatus(request.getStatus());
         }
 
+        if (request.getAcceptanceCriteria() != null) {
+            storyTable.setAcceptanceCriteria(request.getAcceptanceCriteria());
+        }
         storyTable.setUpdatedAt(LocalDateTime.now());
 
         StoryTable updated = storyTableRepository.save(storyTable);
@@ -191,7 +194,7 @@ public class StoryTableServiceImpl implements StoryTableService {
         response.setSpilloverFromSprint(storyTable.getSpilloverFromSprint());
         response.setEmpId(storyTable.getEmpId());
         response.setDueDate(storyTable.getDueDate());
-
+        response.setAcceptanceCriteria(storyTable.getAcceptanceCriteria());
         return response;
     }
 }

@@ -35,5 +35,6 @@ public class StoryTableUpdateRequest {
     private Integer spilloverFromSprint;
     private String empId;
     private LocalDateTime dueDate;
+    private String acceptanceCriteria;
 
 }

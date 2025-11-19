@@ -34,4 +34,5 @@ public class StoryTableCreateRequest {
     private String empId;
     private LocalDateTime dueDate;
 
+    private String acceptanceCriteria;
 }

@@ -18,6 +18,8 @@ public class StoryTable {
     @Id
     private String id;
 
+    private String acceptanceCriteria;
+
     private String taskName;  // Added from FieldTable
 
     private String taskDescription;  // Added from FieldTable
