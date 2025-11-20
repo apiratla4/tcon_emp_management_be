@@ -6,6 +6,7 @@ import com.tcon.empManagement.Entity.Sprint;
 import com.tcon.empManagement.Service.SprintService;
 import com.tcon.empManagement.Util.SprintMapper;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/sprints")
+@Slf4j
 public class SprintController {
 
     private final SprintService sprintService;
@@ -39,15 +41,18 @@ public class SprintController {
         return ResponseEntity.ok(responses);
     }
 
-    /**
-     * Get the active (current) sprint for a project.
-     */
+    // GET /api/sprint/{project}/current
     @GetMapping("/{project}/current")
     public ResponseEntity<SprintResponse> getCurrentSprint(@PathVariable String project) {
+        log.info("GET /api/sprint/{}/current", project);
         Sprint s = sprintService.getCurrentSprintForProject(project);
-        if (s == null) return ResponseEntity.noContent().build();
+        if (s == null) {
+            log.info("No current sprint found for project: {}", project);
+            return ResponseEntity.noContent().build();
+        }
         return ResponseEntity.ok(SprintMapper.toResponse(s));
     }
+
 
     /**
      * Auto-generate 52 weekly sprints for the given project and year.

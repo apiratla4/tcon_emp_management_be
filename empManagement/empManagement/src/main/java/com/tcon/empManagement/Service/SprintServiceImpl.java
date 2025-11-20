@@ -64,10 +64,6 @@ public class SprintServiceImpl implements SprintService {
         return sprintRepository.findByProjectOrderBySprintNumberAsc(project);
     }
 
-    @Override
-    public Sprint getCurrentSprintForProject(String project) {
-        return sprintRepository.findByProjectAndActive(project, true);
-    }
 
     @Override
     @Transactional
@@ -144,6 +140,16 @@ public class SprintServiceImpl implements SprintService {
         if (project == null || sprintNumber == null) return null;
         return sprintRepository.findByProjectAndSprintNumber(project, sprintNumber);
     }
+
+
+    @Override
+    public Sprint getCurrentSprintForProject(String project) {
+        LocalDate today = LocalDate.now();
+        return sprintRepository.findByProjectAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                project, today, today
+        );
+    }
+
 
 
 }
