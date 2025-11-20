@@ -27,7 +27,7 @@ public class SecurityConfig {
 
         // Allow your frontend domain
         configuration.setAllowedOrigins(Arrays.asList(
-                "https://emp.tconsolutions.com",     // Production frontend
+                "https://tasktrailz.tconsolutions.com",     // Production frontend
                 "http://localhost:5173",              // Local development
                 "http://localhost:4173"               // Local preview
         ));
