@@ -8,8 +8,12 @@ import com.tcon.empManagement.Repository.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 
 import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,7 +32,6 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public EmployeeResponse createEmployee(EmployeeCreateRequest request, String createdBy) {
         String status = request.getStatus() != null ? request.getStatus() : "ACTIVE";
-
         Employee employee = Employee.builder()
                 .title(request.getTitle())
                 .firstName(request.getFirstName())
@@ -47,10 +50,8 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
-
         Employee saved = employeeRepository.save(employee);
         employeeHistoryService.recordCreate(saved, createdBy);
-
         return convertToResponse(saved);
     }
 
@@ -58,11 +59,9 @@ public class EmployeeServiceImpl implements EmployeeService {
     public EmployeeResponse updateEmployee(String id, EmployeeUpdateRequest request, String updatedBy) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Employee not found with id: " + id));
-
         if ("INACTIVE".equals(employee.getStatus())) {
             throw new RuntimeException("Cannot update INACTIVE employee. Please activate the employee first.");
         }
-
         if (request.getTitle() != null) employee.setTitle(request.getTitle());
         if (request.getFirstName() != null) employee.setFirstName(request.getFirstName());
         if (request.getLastName() != null) employee.setLastName(request.getLastName());
@@ -76,15 +75,40 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (request.getAddress() != null) employee.setAddress(mapAddressFromUpdateDto(request.getAddress()));
         if (request.getBankDetails() != null) employee.setBankDetails(mapBankDetailsFromUpdateDto(request.getBankDetails()));
         if (request.getEmergencyContact() != null) employee.setEmergencyContact(mapEmergencyContactFromUpdateDto(request.getEmergencyContact()));
-
         employee.setUpdatedAt(Instant.now());
         Employee updated = employeeRepository.save(employee);
         employeeHistoryService.recordUpdate(updated, updatedBy);
-
         return convertToResponse(updated);
     }
 
-    // Mapping from CreateRequest DTOs to Entity
+    // Profile image uploading
+    @Override
+    public EmployeeResponse uploadProfileImage(String empId, MultipartFile file) {
+        Employee employee = employeeRepository.findByEmpId(empId)
+                .orElseThrow(() -> new RuntimeException("Employee not found with empId: " + empId));
+        try {
+            employee.setProfileImage(file.getBytes());
+            employee.setProfileImageType(file.getContentType());
+            employee.setUpdatedAt(Instant.now());
+            Employee saved = employeeRepository.save(employee);
+            return convertToResponse(saved);
+        } catch (Exception ex) {
+            throw new RuntimeException("Could not upload profile image: " + ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    public ResponseEntity<byte[]> getProfileImage(String empId) {
+        Employee employee = employeeRepository.findByEmpId(empId)
+                .orElseThrow(() -> new RuntimeException("Employee not found with empId: " + empId));
+        if (employee.getProfileImage() == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, employee.getProfileImageType())
+                .body(employee.getProfileImage());
+    }
+
     private Employee.Address mapAddressFromCreateDto(EmployeeCreateRequest.AddressDto dto) {
         if (dto == null) return null;
         return Employee.Address.builder()
@@ -115,7 +139,6 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .build();
     }
 
-    // Mapping from UpdateRequest DTOs to Entity
     private Employee.Address mapAddressFromUpdateDto(EmployeeUpdateRequest.AddressDto dto) {
         if (dto == null) return null;
         return Employee.Address.builder()
@@ -148,7 +171,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     // Mapping from Entity to Response DTO
     private EmployeeResponse convertToResponse(Employee employee) {
-        return EmployeeResponse.builder()
+        EmployeeResponse response = EmployeeResponse.builder()
                 .id(employee.getId())
                 .title(employee.getTitle())
                 .firstName(employee.getFirstName())
@@ -165,7 +188,12 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .emergencyContact(mapEmergencyContactToResponseDto(employee.getEmergencyContact()))
                 .createdAt(employee.getCreatedAt())
                 .updatedAt(employee.getUpdatedAt())
+                .profileImageType(employee.getProfileImageType())
                 .build();
+        if (employee.getProfileImage() != null) {
+            response.setProfileImageBase64(Base64.getEncoder().encodeToString(employee.getProfileImage()));
+        }
+        return response;
     }
 
     private EmployeeResponse.AddressDto mapAddressToResponseDto(Employee.Address address) {
@@ -198,7 +226,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .build();
     }
 
-    // Implement remaining methods from interface...
+    // Other CRUD methods unchanged:
     @Override
     public void deleteEmployee(String id, String deletedBy) {
         Employee employee = employeeRepository.findById(id)
@@ -206,56 +234,48 @@ public class EmployeeServiceImpl implements EmployeeService {
         employeeHistoryService.recordDelete(employee, deletedBy);
         employeeRepository.deleteById(id);
     }
-
     @Override
     public EmployeeResponse getEmployeeById(String id) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Employee not found with id: " + id));
         return convertToResponse(employee);
     }
-
     @Override
     public EmployeeResponse getEmployeeByEmpId(String empId) {
         Employee employee = employeeRepository.findByEmpId(empId)
                 .orElseThrow(() -> new RuntimeException("Employee not found with empId: " + empId));
         return convertToResponse(employee);
     }
-
     @Override
     public EmployeeResponse getEmployeeByEmail(String email) {
         Employee employee = employeeRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Employee not found with email: " + email));
         return convertToResponse(employee);
     }
-
     @Override
     public List<EmployeeResponse> getAllEmployees() {
         return employeeRepository.findAll().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
-
     @Override
     public List<EmployeeResponse> getActiveEmployees() {
         return employeeRepository.findByStatus("ACTIVE").stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
-
     @Override
     public List<EmployeeResponse> getInactiveEmployees() {
         return employeeRepository.findByStatus("INACTIVE").stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
-
     @Override
     public List<EmployeeResponse> getEmployeesByRole(String empRole) {
         return employeeRepository.findByEmpRole(empRole).stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
-
     @Override
     public EmployeeResponse activateEmployee(String id, String activatedBy) {
         Employee employee = employeeRepository.findById(id)
@@ -266,7 +286,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         employeeHistoryService.recordUpdate(updated, activatedBy);
         return convertToResponse(updated);
     }
-
     @Override
     public EmployeeResponse deactivateEmployee(String id, String deactivatedBy) {
         Employee employee = employeeRepository.findById(id)

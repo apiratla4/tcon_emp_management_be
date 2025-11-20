@@ -78,4 +78,7 @@ public class EmployeeResponse {
         private Long contactNumber;
         private String relation;
     }
+    private String profileImageBase64;
+    private String profileImageType;
+
 }

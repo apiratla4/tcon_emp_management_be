@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
-
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -29,108 +28,122 @@ public class SprintController {
         this.sprintService = sprintService;
     }
 
-    /**
-     * Get all sprints for a project ordered by sprint number.
-     */
     @GetMapping("/{project}")
     public ResponseEntity<List<SprintResponse>> getSprintsForProject(@PathVariable String project) {
-        List<Sprint> sprints = sprintService.getSprintsForProject(project);
-        List<SprintResponse> responses = sprints.stream()
-                .map(SprintMapper::toResponse)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(responses);
+        log.info("GET /api/sprints/{} - getSprintsForProject called", project);
+        try {
+            List<Sprint> sprints = sprintService.getSprintsForProject(project);
+            List<SprintResponse> responses = sprints.stream()
+                    .map(SprintMapper::toResponse)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(responses);
+        } catch (Exception ex) {
+            log.error("GET /api/sprints/{} failed: {}", project, ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-    // GET /api/sprint/{project}/current
     @GetMapping("/{project}/current")
     public ResponseEntity<SprintResponse> getCurrentSprint(@PathVariable String project) {
-        log.info("GET /api/sprint/{}/current", project);
-        Sprint s = sprintService.getCurrentSprintForProject(project);
-        if (s == null) {
-            log.info("No current sprint found for project: {}", project);
-            return ResponseEntity.noContent().build();
+        log.info("GET /api/sprints/{}/current - getCurrentSprint called", project);
+        try {
+            Sprint s = sprintService.getCurrentSprintForProject(project);
+            if (s == null) {
+                log.info("No current sprint found for project: {}", project);
+                return ResponseEntity.noContent().build();
+            }
+            return ResponseEntity.ok(SprintMapper.toResponse(s));
+        } catch (Exception ex) {
+            log.error("GET /api/sprints/{}/current failed: {}", project, ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        return ResponseEntity.ok(SprintMapper.toResponse(s));
     }
 
-
-    /**
-     * Auto-generate 52 weekly sprints for the given project and year.
-     * Example: POST /api/sprints/PROJECT-A/generate?year=2025
-     */
     @PostMapping("/{project}/generate")
     public ResponseEntity<List<SprintResponse>> generateSprintsForProject(
             @PathVariable String project,
             @RequestParam(required = false) Integer year
     ) {
-        int y = (year != null) ? year : java.time.LocalDate.now().getYear();
-        List<Sprint> created = sprintService.generateSprintsForProject(project, y);
-        List<SprintResponse> resp = created.stream().map(SprintMapper::toResponse).collect(Collectors.toList());
-        return new ResponseEntity<>(resp, HttpStatus.CREATED);
+        log.info("POST /api/sprints/{}/generate - generateSprintsForProject called", project);
+        try {
+            int y = (year != null) ? year : java.time.LocalDate.now().getYear();
+            List<Sprint> created = sprintService.generateSprintsForProject(project, y);
+            List<SprintResponse> resp = created.stream().map(SprintMapper::toResponse).collect(Collectors.toList());
+            return new ResponseEntity<>(resp, HttpStatus.CREATED);
+        } catch (Exception ex) {
+            log.error("POST /api/sprints/{}/generate failed: {}", project, ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-    /**
-     * Create a single sprint (manual).
-     */
     @PostMapping
     public ResponseEntity<SprintResponse> createSprint(@Valid @RequestBody SprintCreateRequest request) {
-        Sprint entity = SprintMapper.toEntity(request);
-        Sprint saved = sprintService.createSprint(entity);
-        return new ResponseEntity<>(SprintMapper.toResponse(saved), HttpStatus.CREATED);
+        log.info("POST /api/sprints - createSprint called");
+        try {
+            Sprint entity = SprintMapper.toEntity(request);
+            Sprint saved = sprintService.createSprint(entity);
+            return new ResponseEntity<>(SprintMapper.toResponse(saved), HttpStatus.CREATED);
+        } catch (Exception ex) {
+            log.error("POST /api/sprints failed: {}", ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-    /**
-     * Activate a sprint for a project (deactivates previous active sprint)
-     */
     @PostMapping("/{project}/activate/{sprintNumber}")
     public ResponseEntity<SprintResponse> activateSprint(
             @PathVariable String project,
             @PathVariable Integer sprintNumber
     ) {
-        Sprint activated = sprintService.activateSprint(project, sprintNumber);
-        return ResponseEntity.ok(SprintMapper.toResponse(activated));
+        log.info("POST /api/sprints/{}/activate/{} - activateSprint called", project, sprintNumber);
+        try {
+            Sprint activated = sprintService.activateSprint(project, sprintNumber);
+            return ResponseEntity.ok(SprintMapper.toResponse(activated));
+        } catch (Exception ex) {
+            log.error("POST /api/sprints/{}/activate/{} failed: {}", project, sprintNumber, ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-    /**
-     * Update sprint by id.
-     */
     @PutMapping("/{id}")
     public ResponseEntity<SprintResponse> updateSprint(@PathVariable String id, @Valid @RequestBody SprintCreateRequest request) {
-        // load existing to preserve any fields not provided (simple pattern)
-        List<Sprint> found = sprintService.getSprintsForProject(request.getProject());
-        Sprint existing = found.stream().filter(s -> id.equals(s.getId())).findFirst().orElse(null);
-        if (existing == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        // map request -> entity (only updating conservative fields)
-        existing.setSprintNumber(request.getSprintNumber());
-        existing.setYear(request.getYear());
-        existing.setStartDate(request.getStartDate());
-        existing.setEndDate(request.getEndDate());
-        existing.setActive(request.getActive());
-
-        Sprint saved = sprintService.createSprint(existing); // createSprint handles active flag cleanup
-        return ResponseEntity.ok(SprintMapper.toResponse(saved));
-    }
-
-    /**
-     * Delete sprint by id.
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSprint(@PathVariable String id) {
+        log.info("PUT /api/sprints/{} - updateSprint called", id);
         try {
-            if (!sprintService.existsById(id)) {
+            List<Sprint> found = sprintService.getSprintsForProject(request.getProject());
+            Sprint existing = found.stream().filter(s -> id.equals(s.getId())).findFirst().orElse(null);
+            if (existing == null) {
+                log.warn("PUT /api/sprints/{} - Not found", id);
                 return ResponseEntity.notFound().build();
             }
 
+            existing.setSprintNumber(request.getSprintNumber());
+            existing.setYear(request.getYear());
+            existing.setStartDate(request.getStartDate());
+            existing.setEndDate(request.getEndDate());
+            existing.setActive(request.getActive());
+
+            Sprint saved = sprintService.createSprint(existing);
+            return ResponseEntity.ok(SprintMapper.toResponse(saved));
+        } catch (Exception ex) {
+            log.error("PUT /api/sprints/{} failed: {}", id, ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSprint(@PathVariable String id) {
+        log.info("DELETE /api/sprints/{} - deleteSprint called", id);
+        try {
+            if (!sprintService.existsById(id)) {
+                log.warn("DELETE /api/sprints/{} - Not found", id);
+                return ResponseEntity.notFound().build();
+            }
             sprintService.deleteSprintById(id);
             return ResponseEntity.noContent().build();
-
         } catch (NoSuchElementException ex) {
+            log.warn("DELETE /api/sprints/{} - Not found (NoSuchElementException)", id);
             return ResponseEntity.notFound().build();
-
         } catch (Exception ex) {
+            log.error("DELETE /api/sprints/{} failed: {}", id, ex.getMessage(), ex);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -139,12 +152,17 @@ public class SprintController {
     public ResponseEntity<SprintResponse> getSprintByProjectAndNumber(
             @PathVariable String project,
             @PathVariable Integer sprintNumber) {
-
-        Sprint sprint = sprintService.getSprintByProjectAndNumber(project, sprintNumber);
-        if (sprint == null) {
-            return ResponseEntity.notFound().build();
+        log.info("GET /api/sprints/{}/{} - getSprintByProjectAndNumber called", project, sprintNumber);
+        try {
+            Sprint sprint = sprintService.getSprintByProjectAndNumber(project, sprintNumber);
+            if (sprint == null) {
+                log.warn("GET /api/sprints/{}/{} - Not found", project, sprintNumber);
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(SprintMapper.toResponse(sprint));
+        } catch (Exception ex) {
+            log.error("GET /api/sprints/{}/{} failed: {}", project, sprintNumber, ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-
-        return ResponseEntity.ok(SprintMapper.toResponse(sprint));
     }
 }
