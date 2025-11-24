@@ -212,4 +212,19 @@ public class EmployeeController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+    // NEW: Delete Profile Image Endpoint
+    @DeleteMapping("/empid/{empId}/profile-image")
+    public ResponseEntity<Void> deleteProfileImage(@PathVariable String empId) {
+        log.info("DELETE /api/employees/empid/{}/profile-image - deleteProfileImage called", empId);
+        try {
+            employeeService.deleteProfileImage(empId);
+            log.info("Profile image deleted successfully for empId={}", empId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception ex) {
+            log.error("DELETE /api/employees/empid/{}/profile-image failed: {}", empId, ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+  }
+}
+
+
 }

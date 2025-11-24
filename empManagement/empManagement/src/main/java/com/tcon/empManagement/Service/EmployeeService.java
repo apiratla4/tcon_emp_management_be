@@ -36,4 +36,6 @@ public interface EmployeeService {
 
     EmployeeResponse uploadProfileImage(String empId, MultipartFile file);
     ResponseEntity<byte[]> getProfileImage(String empId);
+    void deleteProfileImage(String empId);
+
 }

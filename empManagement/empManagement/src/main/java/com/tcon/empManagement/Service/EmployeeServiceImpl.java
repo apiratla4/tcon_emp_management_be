@@ -97,6 +97,21 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
     }
 
+    // NEW: Delete profile image
+    @Override
+    public void deleteProfileImage(String empId) {
+        Employee employee = employeeRepository.findByEmpId(empId)
+                .orElseThrow(() -> new RuntimeException("Employee not found with empId: " + empId));
+
+        // Set profile image and type to null
+        employee.setProfileImage(null);
+        employee.setProfileImageType(null);
+        employee.setUpdatedAt(Instant.now());
+
+        employeeRepository.save(employee);
+    }
+
+
     @Override
     public ResponseEntity<byte[]> getProfileImage(String empId) {
         Employee employee = employeeRepository.findByEmpId(empId)
