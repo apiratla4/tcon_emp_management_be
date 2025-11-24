@@ -153,6 +153,32 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
         }
     }
 
+    @Override
+    public LeaveApprovelResponse editLeave(String id, LeaveApprovelCreateRequest req) {
+        log.info("Editing leave id={} empId={}", id, req.getEmpId());
+        LeaveApprovel leave = repo.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("LeaveApprovel not found: " + id));
+
+        // Only allow edit if status == "PENDING"
+        if (!"PENDING".equalsIgnoreCase(leave.getStatus())) {
+            throw new IllegalStateException("Only PENDING leave requests can be edited");
+        }
+
+        // Update all editable fields
+        leave.setTypeOfLeave(req.getTypeOfLeave());
+        leave.setFromDate(req.getFromDate());
+        leave.setToDate(req.getToDate());
+        double noOfDays = ChronoUnit.DAYS.between(req.getFromDate(), req.getToDate()) + 1;
+        leave.setNoOfDays(noOfDays);
+        leave.setReason(req.getReason());
+        leave.setEmpName(req.getEmpName());
+        leave.setEmpRole(req.getEmpRole());
+        leave.setCreateDate(LocalDateTime.now());
+
+        LeaveApprovel updated = repo.save(leave);
+        return mapResponse(updated);
+    }
+
     private LeaveApprovelResponse mapResponse(LeaveApprovel l) {
         return LeaveApprovelResponse.builder()
                 .id(l.getId())

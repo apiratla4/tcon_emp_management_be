@@ -22,5 +22,6 @@ public interface LeaveApprovelService {
     boolean deleteLeave(String id);
     LeaveApprovelResponse getById(String id);
     List<LeaveApprovelResponse> getLeavesForRole(String role);
+    LeaveApprovelResponse editLeave(String id, LeaveApprovelCreateRequest req);
 
 }

@@ -38,6 +38,21 @@ public class LeaveApprovelController {
         }
     }
 
+    // Edit leave request - before approval
+    @PutMapping("/edit/{id}")
+    public ResponseEntity<LeaveApprovelResponse> editLeave(
+            @PathVariable String id,
+            @Valid @RequestBody LeaveApprovelCreateRequest req) {
+        log.info("PUT /api/leave-approvel/edit/{} empId={}", id, req.getEmpId());
+        try {
+            LeaveApprovelResponse res = service.editLeave(id, req);
+            return ResponseEntity.ok(res);
+        } catch (Exception ex) {
+            log.error("PUT /api/leave-approvel/edit/{} failed: {}", id, ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // Approve/Reject: PATCH, HR/Owner dashboard
     @PatchMapping("/{id}/status")
     public ResponseEntity<LeaveApprovelResponse> updateStatus(@PathVariable String id, @Valid @RequestBody LeaveApprovelUpdateStatusRequest req) {
