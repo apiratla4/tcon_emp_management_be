@@ -28,7 +28,7 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
 
     private final LeaveApprovelRepository repo;
     private final AttendanceService attendanceService;
-
+private final LeaveCounterService leaveCounterService;
     @Override
     public LeaveApprovelResponse applyLeave(LeaveApprovelCreateRequest req) {
         log.info("Applying leave for empId={} typeOfLeave={}", req.getEmpId(), req.getTypeOfLeave());
@@ -74,6 +74,16 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
                 attendanceService.save(attendance);
             }
         }
+
+        if ("APPROVED".equalsIgnoreCase(req.getStatus())) {
+            int days = (leave.getNoOfDays() != null) ? leave.getNoOfDays().intValue() : 0;
+            String leaveType = leave.getTypeOfLeave() != null ? leave.getTypeOfLeave().trim().toUpperCase() : "";
+            if (!leaveType.isEmpty() && days > 0) {
+                leaveCounterService.deductLeave(leave.getEmpId(), leaveType, days);
+            }
+        }
+
+
 
         leave.setStatus(req.getStatus());
         leave.setStatusUpdateDate(LocalDateTime.now());
