@@ -12,6 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.*;
 import java.util.*;
 
@@ -67,24 +69,53 @@ public class AttendanceServiceImpl implements AttendanceService {
                 attendance.setCheckOut(req.getCheckOut().toInstant());
 
                 if (attendance.getCheckIn() != null && attendance.getCheckOut() != null) {
+                    // 1) calculate workHours for THIS record
                     Duration duration = Duration.between(attendance.getCheckIn(), attendance.getCheckOut());
                     double hours = duration.toMinutes() / 60.0;
-                    attendance.setWorkHours(Math.round(hours * 100.0) / 100.0);
+
+                    double roundedHours = BigDecimal.valueOf(hours)
+                            .setScale(2, RoundingMode.HALF_UP)
+                            .doubleValue();
+
+                    attendance.setWorkHours(roundedHours);
                     log.info("Work hours calculated: {} for id={}", attendance.getWorkHours(), id);
                 }
             }
+
             if (req.getStatus() != null) {
                 attendance.setStatus(req.getStatus());
             }
+
             attendance.setUpdatedAt(Instant.now());
             Attendance saved = repo.save(attendance);
             log.info("Check-out successful id={}", saved.getId());
+
+            // 2) recompute ENTIRE totalWorkingHours for this employee (all records)
+            List<Attendance> allRecordsForEmp =
+                    repo.findByEmpIdOrderByDateDesc(saved.getEmpId());
+
+            double total = allRecordsForEmp.stream()
+                    .mapToDouble(a -> Optional.ofNullable(a.getWorkHours()).orElse(0.0))
+                    .sum();
+
+            double roundedTotal = BigDecimal.valueOf(total)
+                    .setScale(2, RoundingMode.HALF_UP)
+                    .doubleValue();
+
+            saved.setTotalWorkingHours(roundedTotal);
+            saved = repo.save(saved);
+
+            log.info("Checkout done. empId={} workHours={} totalWorkingHours={}",
+                    saved.getEmpId(), saved.getWorkHours(), saved.getTotalWorkingHours());
+
             return mapToResponse(saved);
         } catch (Exception ex) {
             log.error("Check-out failed id={}", id, ex);
             throw ex;
         }
     }
+
+
 
     @Override
     public Optional<Attendance> findByEmpIdAndDate(String empId, LocalDate date) {
@@ -193,6 +224,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .workHours(a.getWorkHours())
                 .empRole(a.getEmpRole())
                 .createdAt(toOffsetDateTime(a.getCreatedAt()))
+                .totalWorkingHours(a.getTotalWorkingHours())
                 .updatedAt(toOffsetDateTime(a.getUpdatedAt()))
                 .build();
     }

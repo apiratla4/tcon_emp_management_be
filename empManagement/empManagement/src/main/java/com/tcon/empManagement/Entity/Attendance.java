@@ -28,7 +28,7 @@ public class Attendance {
     private String status;
     private Double workHours;
     private String empRole;
-
+    private Double totalWorkingHours;
     private Instant createdAt;
     private Instant updatedAt;
 }
