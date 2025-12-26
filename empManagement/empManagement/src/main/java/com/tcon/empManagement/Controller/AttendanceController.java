@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -134,5 +136,21 @@ public class AttendanceController {
             throw ex;
         }
     }
+    // 9. Get total work hours for an employee
+    @GetMapping("/employee/{empId}/total-hours")
+    public ResponseEntity<Map<String, Object>> getTotalWorkHours(@PathVariable String empId) {
+        log.info("GET /api/attendance/employee/{}/total-hours", empId);
+        try {
+            Double totalHours = service.getTotalWorkHoursByEmployee(empId);
+            Map<String, Object> response = new HashMap<>();
+            response.put("empId", empId);
+            response.put("totalWorkHours", totalHours);
+            return ResponseEntity.ok(response);
+        } catch (Exception ex) {
+            log.error("GET /api/attendance/employee/{}/total-hours failed", empId, ex);
+            throw ex;
+        }
+    }
+
 }
 
