@@ -19,4 +19,6 @@ public class LeaveApprovelResponse {
     private String status;
     private LocalDateTime createDate;
     private LocalDateTime statusUpdateDate;
+    private String empRole;
+    private String rejectReason;
 }

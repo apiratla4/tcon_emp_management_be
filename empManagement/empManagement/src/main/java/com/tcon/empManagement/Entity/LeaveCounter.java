@@ -12,11 +12,9 @@ public class LeaveCounter {
     @Id
     private String id;
     private String empId;
-    // 2 casual/year
-    private int casualLeaves;      // remaining casual leave for the year
-    // 5 sick/year
-    private int sickLeaves;        // remaining sick leave for the year
-    // 9 annual/year, .75/month, up to 5 can be carried fwd
-    private int annualLeaves;      // remaining annual leave for the year (with carry forward)
+    private int casualLeaves;
+    private int sickLeaves;
+    private double annualLeaves;     // Accrued monthly (.75 per month), up to 5 can be carried forward
     private List<String> publicHolidays;
+    private int lossOfPayLeaves;     // Excess applied leaves deducted as loss of pay
 }

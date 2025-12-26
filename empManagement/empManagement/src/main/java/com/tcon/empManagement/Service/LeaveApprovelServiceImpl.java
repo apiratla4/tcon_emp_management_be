@@ -28,7 +28,7 @@ public class LeaveApprovelServiceImpl implements LeaveApprovelService {
 
     private final LeaveApprovelRepository repo;
     private final AttendanceService attendanceService;
-private final LeaveCounterService leaveCounterService;
+    private final LeaveCounterService leaveCounterService;
     @Override
     public LeaveApprovelResponse applyLeave(LeaveApprovelCreateRequest req) {
         log.info("Applying leave for empId={} typeOfLeave={}", req.getEmpId(), req.getTypeOfLeave());
@@ -57,38 +57,70 @@ private final LeaveCounterService leaveCounterService;
                 () -> new NoSuchElementException("LeaveApprovel not found: " + id)
         );
 
-        // On approval, update Attendance status for the leave dates
-        if ("APPROVED".equalsIgnoreCase(req.getStatus())) {
-            for (LocalDate date = leave.getFromDate(); !date.isAfter(leave.getToDate()); date = date.plusDays(1)) {
-                Optional<Attendance> optionalAttendance = attendanceService.findByEmpIdAndDate(leave.getEmpId(), date);
-                Attendance attendance = optionalAttendance.orElse(Attendance.builder()
-                        .empId(leave.getEmpId())
-                        .empName(leave.getEmpName())
-                        .date(date)
-                        .status("OnLeave")
-                        .createdAt(OffsetDateTime.now().toInstant())
-                        .updatedAt(OffsetDateTime.now().toInstant())
-                        .build());
-                attendance.setStatus("OnLeave");
-                attendance.setUpdatedAt(OffsetDateTime.now().toInstant());
-                attendanceService.save(attendance);
+        String previousStatus = leave.getStatus();
+        String newStatus = req.getStatus();
+        int days = (leave.getNoOfDays() != null) ? leave.getNoOfDays().intValue() : 0;
+
+        // Map leave type to canonical form
+        String mappedType = null;
+        String orig = leave.getTypeOfLeave();
+        if (orig != null && days > 0) {
+            String norm = orig.trim().toUpperCase();
+            if (norm.contains("CASUAL")) mappedType = "CASUAL";
+            else if (norm.contains("SICK")) mappedType = "SICK";
+            else if (norm.contains("ANNUAL") || norm.contains("VACATION")) mappedType = "ANNUAL";
+            else throw new IllegalArgumentException("Invalid leave type: " + orig);
+        }
+
+        // Handle leave counter based on status transition
+        if (mappedType != null && days > 0) {
+            boolean wasApproved = "APPROVED".equalsIgnoreCase(previousStatus);
+            boolean isApproved = "APPROVED".equalsIgnoreCase(newStatus);
+
+            if (!wasApproved && isApproved) {
+                // Transitioning TO approved: DEDUCT leave
+                log.info("Deducting {} days of {} leave for empId={}", days, mappedType, leave.getEmpId());
+                leaveCounterService.deductLeave(leave.getEmpId(), mappedType, days);
+
+                // Update attendance for approved dates
+                for (LocalDate date = leave.getFromDate(); !date.isAfter(leave.getToDate()); date = date.plusDays(1)) {
+                    Optional<Attendance> optionalAttendance = attendanceService.findByEmpIdAndDate(leave.getEmpId(), date);
+                    Attendance attendance = optionalAttendance.orElse(Attendance.builder()
+                            .empId(leave.getEmpId())
+                            .empName(leave.getEmpName())
+                            .date(date)
+                            .status("OnLeave")
+                            .createdAt(OffsetDateTime.now().toInstant())
+                            .updatedAt(OffsetDateTime.now().toInstant())
+                            .build());
+                    attendance.setStatus("OnLeave");
+                    attendance.setUpdatedAt(OffsetDateTime.now().toInstant());
+                    attendanceService.save(attendance);
+                }
+            } else if (wasApproved && !isApproved) {
+                // Transitioning FROM approved to rejected or pending: RESTORE leave
+                log.info("Restoring {} days of {} leave for empId={}", days, mappedType, leave.getEmpId());
+                restoreLeave(leave.getEmpId(), mappedType, days);
             }
         }
 
-        if ("APPROVED".equalsIgnoreCase(req.getStatus())) {
-            int days = (leave.getNoOfDays() != null) ? leave.getNoOfDays().intValue() : 0;
-            String leaveType = leave.getTypeOfLeave() != null ? leave.getTypeOfLeave().trim().toUpperCase() : "";
-            if (!leaveType.isEmpty() && days > 0) {
-                leaveCounterService.deductLeave(leave.getEmpId(), leaveType, days);
-            }
+        if ("REJECTED".equalsIgnoreCase(newStatus)) {
+            leave.setRejectReason(req.getRejectReason());
+        } else {
+            // Clear rejectReason if status changes away from REJECTED
+            leave.setRejectReason(null);
         }
-
-
 
         leave.setStatus(req.getStatus());
         leave.setStatusUpdateDate(LocalDateTime.now());
         LeaveApprovel updated = repo.save(leave);
         return mapResponse(updated);
+    }
+
+    // Add this new helper method in the same class
+    private void restoreLeave(String empId, String leaveType, int days) {
+        // Add the restore logic in LeaveCounterServiceImpl (shown below)
+        leaveCounterService.restoreLeave(empId, leaveType, days);
     }
 
     @Override
@@ -135,65 +167,91 @@ private final LeaveCounterService leaveCounterService;
     }
 
     @Override
-    public List<LeaveApprovelResponse> getLeavesForRole(String role) {
-        log.info("Fetching leaves visible for role={}", role);
+    public List<LeaveApprovelResponse> getLeavesForRole(String role, String currentEmpId) {
+        log.info("Fetching leaves visible for role={} currentEmpId={}", role, currentEmpId);
 
         if (role == null) return List.of();
-
         String normalized = role.trim().toUpperCase(Locale.ROOT);
+
+        // 1) Load all
+        List<LeaveApprovel> all = repo.findAll();
+        log.info("Total leave rows in DB = {}", all.size());
+
+        for (LeaveApprovel l : all) {
+            log.info("Row: id={} empId={} empRole={} status={}",
+                    l.getId(), l.getEmpId(), l.getEmpRole(), l.getStatus());
+        }
+
+        // 2) VERY SIMPLE filter first so you see data in Postman
+        List<LeaveApprovel> filtered;
 
         switch (normalized) {
             case "CEO":
+                // CEO: see everything for now (including own) – frontend blocks self‑approve
+                filtered = all;
+                break;
+
             case "HR":
-                // CEO and HR see all leave requests
-                return repo.findAll()
-                        .stream()
-                        .map(this::mapResponse)
-                        .toList();
+                // HR: see everything for now, we can tighten later
+                filtered = all;
+                break;
 
             case "MANAGER":
-                // Managers see leaves from employees (case-insensitive)
-                return repo.findByEmpRoleIgnoreCaseOrderByCreateDateDesc("EMPLOYEE")
-                        .stream()
-                        .map(this::mapResponse)
-                        .toList();
+                // Manager: see everything for now, frontend will still only allow
+                // approving EMPLOYEE and not own
+                filtered = all;
+                break;
 
             default:
-                return List.of();
+                filtered = List.of();
         }
+
+        log.info("Filtered size for role {} = {}", normalized, filtered.size());
+
+        return filtered.stream()
+                .map(this::mapResponse)
+                .toList();
     }
 
+
     @Override
-    public LeaveApprovelResponse editLeave(String id, LeaveApprovelCreateRequest req) {
-        log.info("Editing leave id={} empId={}", id, req.getEmpId());
+    public LeaveApprovelResponse updateLeave(String id, LeaveApprovelCreateRequest req) {
+        log.info("Updating leave details id={} empId={}", id, req.getEmpId());
+
         LeaveApprovel leave = repo.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("LeaveApprovel not found: " + id));
 
-        // Only allow edit if status == "PENDING"
+        // Only allow updates on PENDING status
         if (!"PENDING".equalsIgnoreCase(leave.getStatus())) {
-            throw new IllegalStateException("Only PENDING leave requests can be edited");
+            throw new IllegalStateException("Cannot update leave with status: " + leave.getStatus());
         }
 
-        // Update all editable fields
+        // Verify employee owns this request
+        if (!req.getEmpId().equals(leave.getEmpId())) {
+            throw new IllegalArgumentException("Cannot update another employee's leave request");
+        }
+
+        // Update fields
+        double noOfDays = ChronoUnit.DAYS.between(req.getFromDate(), req.getToDate()) + 1;
+        leave.setEmpName(req.getEmpName());
+        leave.setEmpRole(req.getEmpRole());
         leave.setTypeOfLeave(req.getTypeOfLeave());
         leave.setFromDate(req.getFromDate());
         leave.setToDate(req.getToDate());
-        double noOfDays = ChronoUnit.DAYS.between(req.getFromDate(), req.getToDate()) + 1;
         leave.setNoOfDays(noOfDays);
         leave.setReason(req.getReason());
-        leave.setEmpName(req.getEmpName());
-        leave.setEmpRole(req.getEmpRole());
-        leave.setCreateDate(LocalDateTime.now());
 
         LeaveApprovel updated = repo.save(leave);
         return mapResponse(updated);
     }
+
 
     private LeaveApprovelResponse mapResponse(LeaveApprovel l) {
         return LeaveApprovelResponse.builder()
                 .id(l.getId())
                 .empId(l.getEmpId())
                 .empName(l.getEmpName())
+                .empRole(l.getEmpRole())
                 .typeOfLeave(l.getTypeOfLeave())
                 .fromDate(l.getFromDate())
                 .toDate(l.getToDate())
@@ -202,6 +260,7 @@ private final LeaveCounterService leaveCounterService;
                 .status(l.getStatus())
                 .createDate(l.getCreateDate())
                 .statusUpdateDate(l.getStatusUpdateDate())
+                .rejectReason(l.getRejectReason())
                 .build();
     }
 }

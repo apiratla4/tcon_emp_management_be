@@ -11,11 +11,9 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.*;
 import java.util.*;
+
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +37,8 @@ public class AttendanceServiceImpl implements AttendanceService {
                     .workMode(req.getWorkMode())
                     .status(req.getStatus())
                     .empRole(req.getEmpRole())
+                    .workHours(0.0)
+                    .totalWorkHours(0.0)
                     .createdAt(now)
                     .updatedAt(now)
                     .build();
@@ -68,17 +68,18 @@ public class AttendanceServiceImpl implements AttendanceService {
             if (req.getCheckOut() != null) {
                 attendance.setCheckOut(req.getCheckOut().toInstant());
 
+                // Calculate daily work hours
                 if (attendance.getCheckIn() != null && attendance.getCheckOut() != null) {
-                    // 1) calculate workHours for THIS record
                     Duration duration = Duration.between(attendance.getCheckIn(), attendance.getCheckOut());
                     double hours = duration.toMinutes() / 60.0;
+                    double dailyWorkHours = Math.round(hours * 100.0) / 100.0;
+                    attendance.setWorkHours(dailyWorkHours);
+                    log.info("Daily work hours calculated: {} for id={}", dailyWorkHours, id);
 
-                    double roundedHours = BigDecimal.valueOf(hours)
-                            .setScale(2, RoundingMode.HALF_UP)
-                            .doubleValue();
-
-                    attendance.setWorkHours(roundedHours);
-                    log.info("Work hours calculated: {} for id={}", attendance.getWorkHours(), id);
+                    // Calculate cumulative total work hours
+                    Double cumulativeTotal = calculateCumulativeTotalHours(attendance.getEmpId(), dailyWorkHours);
+                    attendance.setTotalWorkHours(cumulativeTotal);
+                    log.info("Cumulative total work hours updated: {} for empId={}", cumulativeTotal, attendance.getEmpId());
                 }
             }
 
@@ -88,34 +89,52 @@ public class AttendanceServiceImpl implements AttendanceService {
 
             attendance.setUpdatedAt(Instant.now());
             Attendance saved = repo.save(attendance);
-            log.info("Check-out successful id={}", saved.getId());
-
-            // 2) recompute ENTIRE totalWorkingHours for this employee (all records)
-            List<Attendance> allRecordsForEmp =
-                    repo.findByEmpIdOrderByDateDesc(saved.getEmpId());
-
-            double total = allRecordsForEmp.stream()
-                    .mapToDouble(a -> Optional.ofNullable(a.getWorkHours()).orElse(0.0))
-                    .sum();
-
-            double roundedTotal = BigDecimal.valueOf(total)
-                    .setScale(2, RoundingMode.HALF_UP)
-                    .doubleValue();
-
-            saved.setTotalWorkingHours(roundedTotal);
-            saved = repo.save(saved);
-
-            log.info("Checkout done. empId={} workHours={} totalWorkingHours={}",
-                    saved.getEmpId(), saved.getWorkHours(), saved.getTotalWorkingHours());
-
+            log.info("Check-out successful id={} totalWorkHours={}", saved.getId(), saved.getTotalWorkHours());
             return mapToResponse(saved);
+
         } catch (Exception ex) {
             log.error("Check-out failed id={}", id, ex);
             throw ex;
         }
     }
 
+    /**
+     * Calculate cumulative total work hours for an employee
+     * This includes all previous work hours + current daily work hours
+     */
+    private Double calculateCumulativeTotalHours(String empId, Double currentDailyHours) {
+        log.info("Calculating cumulative total hours for empId={}", empId);
 
+        // Get all attendance records for this employee
+        List<Attendance> allRecords = repo.findByEmpIdOrderByDateDesc(empId);
+
+        // Sum all work hours excluding null values
+        double total = allRecords.stream()
+                .filter(a -> a.getWorkHours() != null && a.getWorkHours() > 0)
+                .mapToDouble(Attendance::getWorkHours)
+                .sum();
+
+        // Add current daily hours
+        total += (currentDailyHours != null ? currentDailyHours : 0.0);
+
+        double roundedTotal = Math.round(total * 100.0) / 100.0;
+        log.info("Total cumulative hours for empId={}: {}", empId, roundedTotal);
+
+        return roundedTotal;
+    }
+
+    @Override
+    public Double getTotalWorkHoursByEmployee(String empId) {
+        log.info("Fetching total work hours for empId={}", empId);
+        List<Attendance> records = repo.findByEmpIdOrderByDateDesc(empId);
+
+        double total = records.stream()
+                .filter(a -> a.getWorkHours() != null && a.getWorkHours() > 0)
+                .mapToDouble(Attendance::getWorkHours)
+                .sum();
+
+        return Math.round(total * 100.0) / 100.0;
+    }
 
     @Override
     public Optional<Attendance> findByEmpIdAndDate(String empId, LocalDate date) {
@@ -165,7 +184,6 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Override
     public List<AttendanceResponse> getAttendanceByDate(LocalDate date) {
-        // For the whole day's range in IST:
         OffsetDateTime dayStart = date.atStartOfDay(DEFAULT_ZONE).toOffsetDateTime();
         OffsetDateTime dayEnd = date.plusDays(1).atStartOfDay(DEFAULT_ZONE).toOffsetDateTime().minusNanos(1);
         Instant utcStart = dayStart.toInstant();
@@ -174,11 +192,12 @@ public class AttendanceServiceImpl implements AttendanceService {
         return records.stream().map(this::mapToResponse).toList();
     }
 
-
     @Override
     public List<AttendanceResponse> getWeeklyTimesheet(String empId, LocalDate weekStart) {
         List<Attendance> records = repo.findByEmpIdAndDateBetween(empId, weekStart, weekStart.plusDays(6));
-        Map<LocalDate, Attendance> map = records.stream().collect(java.util.stream.Collectors.toMap(Attendance::getDate, r -> r));
+        Map<LocalDate, Attendance> map = records.stream()
+                .collect(java.util.stream.Collectors.toMap(Attendance::getDate, r -> r));
+
         List<AttendanceResponse> result = new ArrayList<>(7);
         for (int i = 0; i < 7; i++) {
             LocalDate cur = weekStart.plusDays(i);
@@ -224,7 +243,6 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .workHours(a.getWorkHours())
                 .empRole(a.getEmpRole())
                 .createdAt(toOffsetDateTime(a.getCreatedAt()))
-                .totalWorkingHours(a.getTotalWorkingHours())
                 .updatedAt(toOffsetDateTime(a.getUpdatedAt()))
                 .build();
     }

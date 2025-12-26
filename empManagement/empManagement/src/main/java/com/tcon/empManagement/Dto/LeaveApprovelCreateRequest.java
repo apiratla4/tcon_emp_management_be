@@ -29,6 +29,8 @@ public class LeaveApprovelCreateRequest {
     @NotNull
     private LocalDate toDate;
 
+    private String rejectReason;
+
     @NotBlank
     private String reason;
 }

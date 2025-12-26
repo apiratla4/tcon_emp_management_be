@@ -16,6 +16,7 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 
+
 @RestController
 @RequestMapping("/api/attendance")
 @RequiredArgsConstructor
@@ -49,6 +50,7 @@ public class AttendanceController {
             throw ex;
         }
     }
+
 
     // 3. Check-in endpoint
     @PostMapping("/checkin")
@@ -133,3 +135,4 @@ public class AttendanceController {
         }
     }
 }
+

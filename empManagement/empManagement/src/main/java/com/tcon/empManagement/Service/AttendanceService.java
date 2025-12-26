@@ -13,23 +13,15 @@ import java.util.Optional;
 
 public interface AttendanceService {
 
-    AttendanceResponse checkIn(AttendanceCreateRequest request);
-
-    AttendanceResponse checkOut(String id, AttendanceUpdateRequest request);
-
-    Page<AttendanceResponse> getAllAttendance(Pageable pageable);
-
-    List<AttendanceResponse> getAttendanceByEmployee(String empId);
-
-    AttendanceResponse getById(String id);
-
-    void deleteById(String id);
-
+    AttendanceResponse checkIn(AttendanceCreateRequest req);
+    AttendanceResponse checkOut(String id, AttendanceUpdateRequest req);
     Optional<Attendance> findByEmpIdAndDate(String empId, LocalDate date);
-
     Attendance save(Attendance attendance);
-
+    Page<AttendanceResponse> getAllAttendance(Pageable pageable);
+    List<AttendanceResponse> getAttendanceByEmployee(String empId);
+    AttendanceResponse getById(String id);
+    void deleteById(String id);
     List<AttendanceResponse> getAttendanceByDate(LocalDate date);
-
     List<AttendanceResponse> getWeeklyTimesheet(String empId, LocalDate weekStart);
+    Double getTotalWorkHoursByEmployee(String empId);
 }

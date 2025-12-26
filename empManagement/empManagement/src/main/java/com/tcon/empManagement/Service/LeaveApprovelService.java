@@ -21,7 +21,8 @@ public interface LeaveApprovelService {
     List<LeaveApprovelResponse> getByDateRange(LocalDate from, LocalDate to);
     boolean deleteLeave(String id);
     LeaveApprovelResponse getById(String id);
-    List<LeaveApprovelResponse> getLeavesForRole(String role);
-    LeaveApprovelResponse editLeave(String id, LeaveApprovelCreateRequest req);
+    //List<LeaveApprovelResponse> getLeavesForRole(String role);
+    List<LeaveApprovelResponse> getLeavesForRole(String role, String currentEmpId);
+    LeaveApprovelResponse updateLeave(String id, LeaveApprovelCreateRequest req);
 
 }

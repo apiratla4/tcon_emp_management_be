@@ -32,7 +32,8 @@ public class LeaveApprovel {
     private String reason;
     // Status: PENDING (default), APPROVED, REJECTED
     private String status;
-
+    private String rejectReason;
     private LocalDateTime createDate;       // Request creation timestamp
     private LocalDateTime statusUpdateDate; // Last status change timestamp
 }
+

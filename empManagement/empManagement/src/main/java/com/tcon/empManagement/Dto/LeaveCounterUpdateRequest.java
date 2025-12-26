@@ -8,5 +8,7 @@ import java.util.List;
 public class LeaveCounterUpdateRequest {
     private int casualLeaves;
     private int sickLeaves;
-    private int annualLeaves;
+    private double annualLeaves;
+    private int lossOfPayLeaves;     // Excess applied leaves deducted as loss of pay
+
 }

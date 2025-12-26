@@ -7,4 +7,5 @@ import lombok.*;
 public class LeaveApprovelUpdateStatusRequest {
     @NotBlank
     private String status; // "PENDING", "APPROVED", "REJECTED"
+    private String rejectReason;
 }

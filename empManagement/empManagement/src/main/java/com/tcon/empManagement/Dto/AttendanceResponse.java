@@ -17,5 +17,4 @@ public class AttendanceResponse {
     private String empRole;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-    private Double totalWorkingHours;
 }
