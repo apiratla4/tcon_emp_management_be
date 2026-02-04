@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AttendanceService {
-
     AttendanceResponse checkIn(AttendanceCreateRequest req);
     AttendanceResponse checkOut(String id, AttendanceUpdateRequest req);
     Optional<Attendance> findByEmpIdAndDate(String empId, LocalDate date);
@@ -23,5 +22,5 @@ public interface AttendanceService {
     void deleteById(String id);
     List<AttendanceResponse> getAttendanceByDate(LocalDate date);
     List<AttendanceResponse> getWeeklyTimesheet(String empId, LocalDate weekStart);
-    Double getTotalWorkHoursByEmployee(String empId);
+    Double getTotalWorkHoursByEmployee(String empId); // New method
 }

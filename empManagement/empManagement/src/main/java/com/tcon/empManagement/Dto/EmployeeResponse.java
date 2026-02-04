@@ -41,6 +41,12 @@ public class EmployeeResponse {
 
     private EmergencyContactDto emergencyContact;
 
+    private String dept;
+
+    private String panNo;
+
+    private Instant joiningDate;
+
     private Instant createdAt;
 
     private Instant updatedAt;

@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -38,7 +40,7 @@ public class EmployeeCreateRequest {
     @Size(max = 40)
     private String empRole;
 
-    @NotBlank
+
     private String empId;
 
     @Size(max = 10)
@@ -128,4 +130,10 @@ public class EmployeeCreateRequest {
         @Size(max = 40)
         private String relation;
     }
+
+    // NEW fields
+    private String dept;
+    private String panNo;
+    private Instant joiningDate;
+
 }

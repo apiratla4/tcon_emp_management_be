@@ -5,6 +5,7 @@ import com.tcon.empManagement.Dto.EmployeeResponse;
 import com.tcon.empManagement.Dto.EmployeeUpdateRequest;
 import com.tcon.empManagement.Entity.Employee;
 import com.tcon.empManagement.Repository.EmployeeRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
 
@@ -28,10 +30,22 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private LeaveCounterService leaveCounterService;
+
+    @Autowired
+    private EmpIdGeneratorService empIdGeneratorService;
 
     @Override
     public EmployeeResponse createEmployee(EmployeeCreateRequest request, String createdBy) {
         String status = request.getStatus() != null ? request.getStatus() : "ACTIVE";
+
+        String empId = request.getEmpId();
+        if (empId == null || empId.trim().isEmpty()) {
+            empId = empIdGeneratorService.generateEmpId();
+            log.info("Auto-generated empId: {}", empId);
+        }
+
         Employee employee = Employee.builder()
                 .title(request.getTitle())
                 .firstName(request.getFirstName())
@@ -40,7 +54,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .phoneNumber(request.getPhoneNumber())
                 .empRole(request.getEmpRole())
-                .empId(request.getEmpId())
+                .empId(empId)
                 .bloodGroup(request.getBloodGroup())
                 .salary(request.getSalary())
                 .status(status)
@@ -49,9 +63,20 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .emergencyContact(mapEmergencyContactFromCreateDto(request.getEmergencyContact()))
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
+                .dept(request.getDept())
+                .panNo(request.getPanNo())
+                .joiningDate(request.getJoiningDate() != null ? request.getJoiningDate() : Instant.now())
                 .build();
         Employee saved = employeeRepository.save(employee);
         employeeHistoryService.recordCreate(saved, createdBy);
+        try {
+            leaveCounterService.initializeCounter(saved.getEmpId());
+            log.info("✅ Leave counter auto-initialized for new employee: {} {} ({})",
+                    saved.getFirstName(), saved.getLastName(), saved.getEmpId());
+        } catch (Exception e) {
+            log.error("❌ Failed to initialize leave counter for empId={}: {}",
+                    saved.getEmpId(), e.getMessage(), e);
+        }
         return convertToResponse(saved);
     }
 
@@ -75,6 +100,9 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (request.getAddress() != null) employee.setAddress(mapAddressFromUpdateDto(request.getAddress()));
         if (request.getBankDetails() != null) employee.setBankDetails(mapBankDetailsFromUpdateDto(request.getBankDetails()));
         if (request.getEmergencyContact() != null) employee.setEmergencyContact(mapEmergencyContactFromUpdateDto(request.getEmergencyContact()));
+        if (request.getDept() != null) employee.setDept(request.getDept());
+        if (request.getPanNo() != null) employee.setPanNo(request.getPanNo());
+        if (request.getJoiningDate() != null) employee.setJoiningDate(request.getJoiningDate());
         employee.setUpdatedAt(Instant.now());
         Employee updated = employeeRepository.save(employee);
         employeeHistoryService.recordUpdate(updated, updatedBy);
@@ -204,6 +232,9 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .createdAt(employee.getCreatedAt())
                 .updatedAt(employee.getUpdatedAt())
                 .profileImageType(employee.getProfileImageType())
+                .dept(employee.getDept())
+                .panNo(employee.getPanNo())
+                .joiningDate(employee.getJoiningDate())
                 .build();
         if (employee.getProfileImage() != null) {
             response.setProfileImageBase64(Base64.getEncoder().encodeToString(employee.getProfileImage()));

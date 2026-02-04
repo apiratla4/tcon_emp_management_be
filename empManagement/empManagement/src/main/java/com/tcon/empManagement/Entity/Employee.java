@@ -150,4 +150,8 @@ public class Employee {
 
     private byte[] profileImage;
     private String profileImageType; // e.g. "image/png"
+
+    private String dept;
+    private String panNo;
+    private Instant joiningDate;
 }

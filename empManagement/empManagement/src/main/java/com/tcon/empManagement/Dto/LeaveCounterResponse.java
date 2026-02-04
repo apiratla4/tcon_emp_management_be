@@ -13,4 +13,8 @@ public class LeaveCounterResponse {
     private List<String> publicHolidays;
     private int lossOfPayLeaves;     // Excess applied leaves deducted as loss of pay
 
+    // ✅ NEW: Total allocations
+    private int totalCasualLeaves;
+    private int totalSickLeaves;
+    private double totalAnnualLeaves;
 }
